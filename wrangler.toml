@@ -1,0 +1,6 @@
+name = "embed-banner-nagar"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+[vars]
+ALBUM_URL = "https://example.com/album-placeholder"

@@ -1,0 +1,120 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+}
+
+.album-banner {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: min(100vw, 100vh, 100dvh);
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair;
+  background: #000;
+}
+
+.album-banner__layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.album-banner__scratch {
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 600ms ease;
+  will-change: opacity;
+}
+
+.album-banner__scratch--revealed {
+  opacity: 0;
+}
+
+.album-banner__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font: 500 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  pointer-events: none;
+  letter-spacing: 0.02em;
+  transition: opacity 220ms ease;
+  will-change: opacity;
+}
+
+.album-banner__hint--hidden {
+  opacity: 0;
+}
+
+.album-banner__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  text-decoration: none;
+  color: #fff;
+  background: #111;
+  font: 600 16px/1.2 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.album-banner__fallback-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.album-banner__fallback-image--hidden {
+  display: none;
+}
+
+.album-banner__fallback-label {
+  position: relative;
+  z-index: 1;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
