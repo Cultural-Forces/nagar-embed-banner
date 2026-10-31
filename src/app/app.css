@@ -104,11 +104,9 @@ button {
 /* Hero: cover, title and platforms on black. */
 
 .hero {
-  position: relative;
   width: 100%;
   max-width: var(--content-width);
   margin: 0 auto;
-  overflow: hidden;
 }
 
 .hero__content {
@@ -120,6 +118,7 @@ button {
 /* Cover: full width on phones. */
 
 .cover {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,9 +177,10 @@ button {
   visibility: hidden;
 }
 
-/* Hint and reveal link lie on the soot like a slide title, with no boxes.
-   They sit on the cover, so hiding them never moves the page. The overlay
-   lets strokes through; only the link takes taps. */
+/* The hint lies on the soot like a slide title, with no box; the reveal link
+   sits quietly at the bottom edge, out of the way of the strokes. Both are on
+   the cover, so hiding them never moves the page. The overlay lets strokes
+   through; only the link takes taps. */
 .cover__overlay {
   position: absolute;
   inset: 0;
@@ -213,13 +213,19 @@ button {
   opacity: 0;
 }
 
-/* Same look as the social links: caps with a red underline. */
+/* Same look as the social links: caps with a red underline. Muted and at the
+   bottom, so it does not pull the eye from the hint or block the middle. */
 .cover__reveal-button {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
   padding: 12px 8px;
   border: 0;
   background: none;
-  color: var(--color-text);
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
   font-size: 11px;
   line-height: 1.2;
   letter-spacing: 0.04em;
@@ -233,8 +239,9 @@ button {
   transition: color 150ms ease;
 }
 
-.cover__reveal-button:hover {
-  color: var(--color-accent);
+.cover__reveal-button:hover,
+.cover__reveal-button:focus-visible {
+  color: var(--color-text);
 }
 
 /* TEMP: hint variants for comparison, switched with ?hint= (see promo-page.ts).
@@ -352,9 +359,12 @@ button {
   background: var(--color-accent);
 }
 
-/* About: black on light grey, like the content slides. */
+/* About: black on light grey, like the content slides. It sits above the soot
+   halo around the cover, so the soot stays on the black part of the page. */
 
 .about {
+  position: relative;
+  z-index: 1;
   background: var(--color-paper);
   color: var(--color-ink);
 }
