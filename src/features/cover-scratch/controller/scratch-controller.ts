@@ -18,7 +18,7 @@ import {
 import type { Point } from '../shared/types';
 import { computeErasedRatio } from '../model/scratch-progress';
 import { sampleLine } from '../model/line-sampler';
-import { easeInOutCubic } from '../model/settle-level';
+import { easeInOutCubic } from '../model/easing';
 import { createDissolveField, writeFieldAlpha } from '../model/soot-field';
 import { createBrushStamp } from './brush-stamp';
 
@@ -99,6 +99,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   let dissolveFrame: number | null = null;
   let appearField: Float32Array | null = null;
   let appearFrame: number | null = null;
+  let appearDone: (() => void) | null = null;
 
   const stamp = createBrushStamp(BRUSH_TEXTURE_SIZE, Math.random);
 
@@ -202,6 +203,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     draw();
 
     return new Promise((resolve) => {
+      appearDone = resolve;
       let start: number | null = null;
       const tick = (now: number): void => {
         start ??= now;
@@ -214,6 +216,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
         }
         appearFrame = null;
         appearField = null;
+        appearDone = null;
         mode = { kind: 'scratch' };
         enabled = true;
         draw();
@@ -225,6 +228,17 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
 
   const dissolve = (durationMs: number): Promise<void> => {
     disable();
+    // Opened while the nagar was still gathering (the sleeve button can be
+    // pressed then): stop gathering, and the dissolve takes it from the whole
+    // nagar. Otherwise the gathering would finish over the open cover.
+    if (mode.kind === 'appear') {
+      if (appearFrame !== null) cancelAnimationFrame(appearFrame);
+      appearFrame = null;
+      appearField = null;
+      mode = { kind: 'scratch' };
+      appearDone?.();
+      appearDone = null;
+    }
     if (mode.kind !== 'scratch') return Promise.resolve();
 
     const finish = (): void => {

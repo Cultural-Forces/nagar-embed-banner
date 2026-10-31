@@ -359,9 +359,8 @@ button {
   visibility: hidden;
 }
 
-/* After the reveal the canvas stays: JS dissolves the rest of the nagar on it
-   and later draws the soot that settles back on scroll. Touches pass through
-   to the page so the cover scrolls like any image. */
+/* After the reveal the canvas stays while JS dissolves the rest of the nagar
+   on it. Touches pass through to the page so the cover scrolls like any image. */
 .cover--revealed .cover__canvas {
   pointer-events: none;
 }
@@ -369,8 +368,7 @@ button {
 /* Desktop with a mouse: once the soot is gone the cover comes forward like a
    card in the hand. A red glow lies under it; under the pointer it grows a
    little and turns after it, with a glare, and the glow shifts after the
-   pointer (card-tilt.ts sets the variables). The glow dims as soot settles
-   back on scroll (--cover-settle from mount.ts). Keep the query in sync with
+   pointer (card-tilt.ts sets the variables). Keep the query in sync with
    TILT_MEDIA in constants.ts. */
 @media (min-width: 960px) and (hover: hover) and (pointer: fine) {
   /* keeps the glow behind the stage, not behind the page */
@@ -390,7 +388,7 @@ button {
   }
 
   .cover--lifted .cover__card::before {
-    opacity: calc(0.55 * (1 - var(--cover-settle, 0)));
+    opacity: 0.55;
     animation: cover-glow-in 1200ms ease backwards;
   }
 }
@@ -466,6 +464,67 @@ button {
 
 .cover--revealed .cover__image {
   animation: cover-breathe 1400ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+/* The open cover dims as it scrolls away, run by the browser on a scroll
+   timeline, so it keeps up with the finger and costs no script. It fades
+   into the dark blurred copy under it, from the moment its top reaches the top of the
+   window until it is gone. On a phone the picture also sinks into its
+   frame: it grows to 1.2 inside the stage, which clips it, so nothing
+   spills past the full-width cover. On desktop the red glow under it goes
+   out too. Only once the cover is open: before,
+   the nagar is being erased. Off with reduced motion and where scroll
+   timelines are missing. */
+@keyframes cover-sink {
+  to {
+    scale: 1.2;
+    opacity: 0.3;
+  }
+}
+
+@keyframes cover-dim {
+  to {
+    opacity: 0.1;
+  }
+}
+
+@keyframes cover-glow-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .cover {
+      view-timeline: --cover-away block;
+    }
+
+    .cover--revealed .cover__image {
+      animation:
+        cover-breathe 1400ms cubic-bezier(0.33, 0, 0.2, 1),
+        cover-sink linear both;
+      animation-timeline: auto, --cover-away;
+      animation-range: normal, exit 0% exit 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) and (min-width: 960px) {
+    .cover--revealed .cover__image {
+      animation-name: cover-breathe, cover-dim;
+    }
+  }
+
+  /* the red glow under the cover goes out with it */
+  @media (prefers-reduced-motion: no-preference) and (min-width: 960px) and (hover: hover) and (pointer: fine) {
+    .cover--lifted .cover__card::before {
+      animation:
+        cover-glow-in 1200ms ease backwards,
+        cover-glow-out linear both;
+      animation-timeline: auto, --cover-away;
+      animation-range: normal, exit 0% exit 100%;
+    }
+  }
 }
 
 .cover--static .cover__nagar,

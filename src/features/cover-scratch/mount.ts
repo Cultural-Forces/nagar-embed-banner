@@ -1,10 +1,9 @@
 import { startCardTilt, type CardTiltHandle } from './controller/card-tilt';
 import { createHaloRenderer, type HaloRenderer } from './controller/halo-renderer';
 import { startScratchController, type ScratchController } from './controller/scratch-controller';
-import { startScrollSettle, type ScrollSettle } from './controller/scroll-settle';
 import { waitForImageWithRetry } from './controller/wait-for-image';
 import { createDemoStroke } from './model/demo-stroke';
-import { easeInOutCubic } from './model/settle-level';
+import { easeInOutCubic } from './model/easing';
 import {
   DEMO_STROKE_DELAY_MS,
   APPEAR_DURATION_MS,
@@ -56,7 +55,6 @@ export async function mountCoverScratch(
   const refs = queryRefs(root);
 
   let controller: ScratchController | null = null;
-  let scrollSettle: ScrollSettle | null = null;
   let cardTilt: CardTiltHandle | null = null;
   let canvas: HTMLCanvasElement | null = null;
   let revealed = false;
@@ -77,27 +75,13 @@ export async function mountCoverScratch(
   };
 
   // The rest of the nagar crumbles away, the soot past its edges with it,
-  // then soot settles back on the cover as it scrolls out of view and clears
-  // when it comes back. Around the cover it spills onto the page, so the
-  // cover edges do not cut off sharply. The glow dims under the soot.
+  // and the cover is left clean.
   const playReveal = (scratch: ScratchController): void => {
     const duration = reducedMotion ? 0 : DISSOLVE_DURATION_MS;
-    void Promise.all([scratch.dissolve(duration), animateEdge(0, duration)]).then(() => {
-      lift();
-      if (reducedMotion || scrollSettle !== null) return;
-      const settleHalo = ensureHalo();
-      scrollSettle = startScrollSettle({
-        target: refs.stage,
-        onLevel: (amount) => {
-          settleHalo?.draw(amount);
-          root.style.setProperty('--cover-settle', amount.toFixed(3));
-        },
-      });
-    });
+    void Promise.all([scratch.dissolve(duration), animateEdge(0, duration)]).then(lift);
   };
 
-  // One soot halo for both the ragged edge before the reveal and the soot
-  // that settles back after it, so the same tongues grow on scroll.
+  // The soot past the nagar edges before the reveal, on its own canvas around the cover.
   let haloCanvas: HTMLCanvasElement | null = null;
   let halo: HaloRenderer | null = null;
   let haloFailed = false;
@@ -124,23 +108,31 @@ export async function mountCoverScratch(
   let edgeLevel = 0;
   const drawEdge = (): void => {
     if (revealed) return;
-    halo?.draw(edgeLevel, true);
+    halo?.draw(edgeLevel);
   };
 
   let edgeFrame: number | null = null;
+  // A new run takes over from one still going (the reveal can come while the
+  // soot is still growing), so the two do not fight over the level.
+  let edgeDone: (() => void) | null = null;
   const animateEdge = (to: number, durationMs: number): Promise<void> => {
     if (halo === null) return Promise.resolve();
+    if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
+    edgeFrame = null;
+    edgeDone?.();
     const from = edgeLevel;
     return new Promise((resolve) => {
+      edgeDone = resolve;
       const start = performance.now();
       const step = (now: number): void => {
         const t = durationMs > 0 ? Math.min(1, (now - start) / durationMs) : 1;
         edgeLevel = from + (to - from) * easeInOutCubic(t);
-        halo?.draw(edgeLevel, true);
+        halo?.draw(edgeLevel);
         if (t < 1) {
           edgeFrame = requestAnimationFrame(step);
         } else {
           edgeFrame = null;
+          edgeDone = null;
           resolve();
         }
       };
@@ -210,7 +202,6 @@ export async function mountCoverScratch(
       refs.button.removeEventListener('click', onButtonClick);
       window.removeEventListener('resize', drawEdge);
       if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
-      scrollSettle?.destroy();
       cardTilt?.destroy();
       haloCanvas?.remove();
       controller?.destroy();
@@ -273,7 +264,8 @@ export async function mountCoverScratch(
     window.addEventListener('resize', drawEdge);
     void Promise.all([scratch.appear(appearMs), animateEdge(EDGE_SOOT_LEVEL, appearMs)]).then(() => {
       root.classList.add('cover--canvas');
-      startHint(scratch);
+      // opened while the nagar was gathering: no hint over the open cover
+      if (!revealed) startHint(scratch);
     });
   } catch (error) {
     canvas?.remove();
