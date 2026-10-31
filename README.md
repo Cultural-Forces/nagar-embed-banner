@@ -55,9 +55,17 @@
    десь ледь торкаючись краю, десь язиками. Обкладинка й сторінка навколо неї
    — один шар на окремому canvas `cover__halo`, тож на межі немає лінії. Якщо
    горнути назад, кіптява сходить.
+6. На десктопі з мишкою під відкритою обкладинкою після розсипання
+   з'являється червоне світіння. Під курсором вона трохи збільшується (×1,05) і
+   нахиляється за ним до 6°, як картка в руці, з відблиском під курсором,
+   а червона тінь під нею, що у спокої лежить зверху зліва, зсувається за
+   курсором; коли курсор іде, все повертається на місце з легким
+   пружинням. Ореол кіптяви
+   нахиляється разом з нею, а світіння гасне, коли кіптява повертається.
 
 З `prefers-reduced-motion: reduce` немає появи першого екрана, збирання
-нагару, демо-мазка, розсипання й повернення кіптяви: шар зникає одразу.
+нагару, демо-мазка, розсипання й повернення кіптяви, збільшення й нахилу
+обкладинки: шар зникає одразу, світіння лишається.
 Лоадер крутиться й тоді.
 
 Тимчасово: параметр `?hint=text-gesture|text|gesture|cutout` перемикає варіант
@@ -73,8 +81,9 @@ src/
     cover-scratch/
       shared/    constants & types
       model/     pure logic: brush alpha, erased ratio, line sampling,
-                 demo stroke, soot field, settle level
-      controller/canvas, mask, pointer handling, scroll settle, soot halo
+                 demo stroke, soot field, settle level, card tilt
+      controller/canvas, mask, pointer handling, scroll settle, soot halo,
+                 card tilt
       mount.ts   binds the controller to the markup in index.html
     link-tracking/            delegated clicks on [data-platform] / [data-social]
   shared/

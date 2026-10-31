@@ -37,33 +37,35 @@
     <main class="page">
       <div class="hero">
         <section class="cover" aria-label="Обкладинка альбому" data-cover data-hint="text-gesture">
-          <div class="cover__stage" tabindex="-1" data-cover-stage>
-            <img
-              class="cover__image"
-              src="/src/assets/cover.webp"
-              width="1080"
-              height="1080"
-              alt="Обкладинка альбому «НАГАР» гурту Проспект Соборний"
-              fetchpriority="low"
-              decoding="async"
-              data-cover-image>
-            <img
-              class="cover__nagar"
-              src="/src/assets/nagar.webp"
-              width="1080"
-              height="1080"
-              alt=""
-              aria-hidden="true"
-              fetchpriority="high"
-              decoding="async"
-              data-cover-nagar>
-            <div class="cover__overlay" data-cover-overlay>
-              <div class="cover__loader" aria-hidden="true" data-cover-loader>
-                <span class="cover__spinner"></span>
-                <span class="cover__loader-text">Завантажуємо обкладинку…</span>
+          <div class="cover__card" data-cover-card>
+            <div class="cover__stage" tabindex="-1" data-cover-stage>
+              <img
+                class="cover__image"
+                src="/src/assets/cover.webp"
+                width="1080"
+                height="1080"
+                alt="Обкладинка альбому «НАГАР» гурту Проспект Соборний"
+                fetchpriority="low"
+                decoding="async"
+                data-cover-image>
+              <img
+                class="cover__nagar"
+                src="/src/assets/nagar.webp"
+                width="1080"
+                height="1080"
+                alt=""
+                aria-hidden="true"
+                fetchpriority="high"
+                decoding="async"
+                data-cover-nagar>
+              <div class="cover__overlay" data-cover-overlay>
+                <div class="cover__loader" aria-hidden="true" data-cover-loader>
+                  <span class="cover__spinner"></span>
+                  <span class="cover__loader-text">Завантажуємо обкладинку…</span>
+                </div>
+                <p class="cover__hint" aria-hidden="true" data-cover-hint>Зітри нагар</p>
+                <button class="cover__reveal-button" type="button" data-cover-reveal>Відкрити обкладинку</button>
               </div>
-              <p class="cover__hint" aria-hidden="true" data-cover-hint>Зітри нагар</p>
-              <button class="cover__reveal-button" type="button" data-cover-reveal>Відкрити обкладинку</button>
             </div>
           </div>
           <p class="visually-hidden" aria-live="polite" data-cover-status></p>

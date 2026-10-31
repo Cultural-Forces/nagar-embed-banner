@@ -1,3 +1,4 @@
+import { startCardTilt, type CardTiltHandle } from './controller/card-tilt';
 import { createHaloRenderer, type HaloRenderer } from './controller/halo-renderer';
 import { startScratchController, type ScratchController } from './controller/scratch-controller';
 import { startScrollSettle, type ScrollSettle } from './controller/scroll-settle';
@@ -28,6 +29,7 @@ export type CoverScratchInstance = {
 };
 
 type CoverRefs = {
+  readonly card: HTMLElement;
   readonly stage: HTMLElement;
   readonly image: HTMLImageElement;
   readonly nagar: HTMLImageElement;
@@ -44,7 +46,8 @@ type CoverRefs = {
  * (`cover--ready`), and once it is whole erasing starts (`cover--canvas`).
  * If an image fails to load, the cover stays closed (`cover--nagar-failed`,
  * `cover--image-failed`); if the canvas cannot start, the cover is shown as is
- * (`cover--static`).
+ * (`cover--static`). Once revealed, on desktop the cover glows, and under the
+ * mouse grows a little and turns after it (`cover--lifted`).
  */
 export async function mountCoverScratch(
   root: HTMLElement,
@@ -54,6 +57,7 @@ export async function mountCoverScratch(
 
   let controller: ScratchController | null = null;
   let scrollSettle: ScrollSettle | null = null;
+  let cardTilt: CardTiltHandle | null = null;
   let canvas: HTMLCanvasElement | null = null;
   let revealed = false;
   let hintHideTimer: number | null = null;
@@ -63,18 +67,31 @@ export async function mountCoverScratch(
     refs.hint.classList.add('cover__hint--hidden');
   };
 
+  // The clean cover comes forward like a card in the hand: on desktop it
+  // glows, and under the mouse grows and turns after it (see .cover__card
+  // in app.css).
+  const lift = (): void => {
+    if (root.classList.contains('cover--lifted')) return;
+    root.classList.add('cover--lifted');
+    if (!reducedMotion) cardTilt = startCardTilt({ area: root, card: refs.card });
+  };
+
   // The rest of the nagar crumbles away, the soot past its edges with it,
   // then soot settles back on the cover as it scrolls out of view and clears
   // when it comes back. Around the cover it spills onto the page, so the
-  // cover edges do not cut off sharply.
+  // cover edges do not cut off sharply. The glow dims under the soot.
   const playReveal = (scratch: ScratchController): void => {
     const duration = reducedMotion ? 0 : DISSOLVE_DURATION_MS;
     void Promise.all([scratch.dissolve(duration), animateEdge(0, duration)]).then(() => {
+      lift();
       if (reducedMotion || scrollSettle !== null) return;
       const settleHalo = ensureHalo();
       scrollSettle = startScrollSettle({
         target: refs.stage,
-        onLevel: (amount) => settleHalo?.draw(amount),
+        onLevel: (amount) => {
+          settleHalo?.draw(amount);
+          root.style.setProperty('--cover-settle', amount.toFixed(3));
+        },
       });
     });
   };
@@ -135,6 +152,7 @@ export async function mountCoverScratch(
     if (revealed) return;
     revealed = true;
     if (controller !== null) playReveal(controller);
+    else lift();
     hideHint();
 
     // the button disappears; keep keyboard focus near what it revealed
@@ -193,6 +211,7 @@ export async function mountCoverScratch(
       window.removeEventListener('resize', drawEdge);
       if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
       scrollSettle?.destroy();
+      cardTilt?.destroy();
       haloCanvas?.remove();
       controller?.destroy();
       canvas?.remove();
@@ -277,6 +296,7 @@ function queryRefs(root: HTMLElement): CoverRefs {
   };
 
   return {
+    card: find('[data-cover-card]', HTMLElement),
     stage: find('[data-cover-stage]', HTMLElement),
     image: find('[data-cover-image]', HTMLImageElement),
     nagar: find('[data-cover-nagar]', HTMLImageElement),
