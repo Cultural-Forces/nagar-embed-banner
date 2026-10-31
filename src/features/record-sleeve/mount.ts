@@ -1,4 +1,4 @@
-import { slideProgress } from './model/slide-progress';
+import { slideEndFraction, slideProgress } from './model/slide-progress';
 import { SLIDE_END_RATIO } from './shared/constants';
 
 export type RecordSleeveHandlers = {
@@ -12,10 +12,11 @@ export type RecordSleeveInstance = {
 
 /**
  * Slides the record out of the sleeve as the sleeve scrolls up into view and
- * back in on the way down: writes `--sleeve-out` (0..1) on `root`, CSS moves
- * the record and turns its label (see .sleeve in app.css). With
- * prefers-reduced-motion it does not follow the scroll and CSS keeps the
- * record out. The «Відкрити обкладинку» button works either way.
+ * back in on the way down (see .sleeve in app.css). Where CSS can tie an
+ * animation to scrolling, the browser runs it and JS only places the end of
+ * the run; elsewhere JS writes `--sleeve-out` (0..1) on every scroll frame.
+ * With prefers-reduced-motion it does neither and CSS keeps the record out.
+ * The «Відкрити обкладинку» button works either way.
  */
 export function mountRecordSleeve(root: HTMLElement, handlers: RecordSleeveHandlers): RecordSleeveInstance {
   const button = root.querySelector<HTMLButtonElement>('[data-sleeve-reveal]');
@@ -27,31 +28,74 @@ export function mountRecordSleeve(root: HTMLElement, handlers: RecordSleeveHandl
   };
   button?.addEventListener('click', onButtonClick);
 
-  const stopScroll = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? null : followScroll(root);
+  let stopSliding: (() => void) | null = null;
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    stopSliding = CSS.supports('animation-timeline: view()') ? placeRunEnd(root) : followScroll(root);
+  }
 
   return {
     destroy: () => {
       button?.removeEventListener('click', onButtonClick);
-      stopScroll?.();
+      stopSliding?.();
     },
   };
 }
 
+/** Where the sleeve sits on the page; read only when the layout changes, never while scrolling. */
+type SleeveMetrics = {
+  readonly top: number;
+  readonly height: number;
+  readonly viewportHeight: number;
+  /** The sleeve top at the furthest scroll of the page. */
+  readonly highestTop: number;
+};
+
+function measure(root: HTMLElement): SleeveMetrics {
+  const rect = root.getBoundingClientRect();
+  const top = rect.top + window.scrollY;
+  const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  return { top, height: rect.height, viewportHeight: window.innerHeight, highestTop: top - maxScroll };
+}
+
+/** Calls `onChange` when the window or anything in the page changes size. */
+function watchLayout(onChange: () => void): () => void {
+  const observer = new ResizeObserver(onChange);
+  observer.observe(document.documentElement);
+  window.addEventListener('resize', onChange);
+  return () => {
+    observer.disconnect();
+    window.removeEventListener('resize', onChange);
+  };
+}
+
+// The browser moves the record on the scroll timeline (app.css); this only
+// says where the run ends, and drops the timeline when the page cannot bring
+// the sleeve up, so the record stays out.
+function placeRunEnd(root: HTMLElement): () => void {
+  const update = (): void => {
+    const m = measure(root);
+    const end = slideEndFraction(m.height, m.viewportHeight, SLIDE_END_RATIO, m.highestTop);
+    if (end === null) {
+      delete root.dataset.sleeveTimeline;
+      return;
+    }
+    root.style.setProperty('--sleeve-end', `${(end * 100).toFixed(2)}%`);
+    root.dataset.sleeveTimeline = '';
+  };
+
+  const stopWatching = watchLayout(update);
+  update();
+  return stopWatching;
+}
+
 function followScroll(root: HTMLElement): () => void {
   let frame: number | null = null;
+  let metrics = measure(root);
 
   const update = (): void => {
     frame = null;
-    const rect = root.getBoundingClientRect();
-    const scroller = document.documentElement;
-    const scrollLeft = Math.max(0, scroller.scrollHeight - window.innerHeight - window.scrollY);
-    const progress = slideProgress(
-      rect.top,
-      rect.height,
-      window.innerHeight,
-      SLIDE_END_RATIO,
-      rect.top - scrollLeft,
-    );
+    const { top, height, viewportHeight, highestTop } = metrics;
+    const progress = slideProgress(top - window.scrollY, height, viewportHeight, SLIDE_END_RATIO, highestTop);
     root.style.setProperty('--sleeve-out', progress.toFixed(3));
   };
 
@@ -59,13 +103,16 @@ function followScroll(root: HTMLElement): () => void {
     if (frame === null) frame = requestAnimationFrame(update);
   };
 
+  const stopWatching = watchLayout(() => {
+    metrics = measure(root);
+    onScroll();
+  });
   window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll);
   update();
 
   return () => {
+    stopWatching();
     window.removeEventListener('scroll', onScroll);
-    window.removeEventListener('resize', onScroll);
     if (frame !== null) cancelAnimationFrame(frame);
   };
 }

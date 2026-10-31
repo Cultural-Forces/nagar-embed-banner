@@ -679,6 +679,51 @@ button {
   will-change: transform;
 }
 
+/* Where the browser can tie an animation to scrolling, it moves the record
+   itself, in step with the scroll even on iOS, where scrolling runs apart
+   from the page's JS and --sleeve-out set from a scroll handler lags behind
+   the finger. The keyframes are the same run: the same distance, the label
+   turning upright, the same smoothstep easing. JS only says where the run
+   ends (--sleeve-end, a share of the timeline's cover range) and marks the
+   sleeve with data-sleeve-timeline. */
+@keyframes sleeve-record-out {
+  from {
+    translate: 0 0;
+  }
+
+  to {
+    translate: 70% 0;
+  }
+}
+
+@keyframes sleeve-label-roll {
+  from {
+    rotate: -360deg;
+  }
+
+  to {
+    rotate: 0deg;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .sleeve[data-sleeve-timeline] {
+    view-timeline: --sleeve block;
+  }
+
+  .sleeve[data-sleeve-timeline] .sleeve__record {
+    animation: sleeve-record-out cubic-bezier(0.333, 0, 0.667, 1) both;
+    animation-timeline: --sleeve;
+    animation-range: cover 0% cover var(--sleeve-end, 50%);
+  }
+
+  .sleeve[data-sleeve-timeline] .sleeve__label {
+    animation: sleeve-label-roll cubic-bezier(0.333, 0, 0.667, 1) both;
+    animation-timeline: --sleeve;
+    animation-range: cover 0% cover var(--sleeve-end, 50%);
+  }
+}
+
 .sleeve__label-artist {
   max-width: 70%;
   font-size: 9cqw;
