@@ -857,16 +857,18 @@ button {
 
 /* Desktop: cover on the right, text on the left, like the presentation slides.
    The first screen takes 90% of the window, so only the top of «Про альбом»
-   shows under it, and the cover grows with the screen: from 520 px up to
-   720 px, never taller than the first screen minus the padding around it.
-   The gap between the columns grows with it, since the soot past the cover
-   edge grows too (20% of the cover, 144 px at 720): 64 px up to
-   1200 px wide, about 150 px at 1920. */
+   shows under it. The cover takes 40% of the width, up to 720 px, and no
+   more than lets the soot past its edge (20% of the cover, HALO_MARGIN_RATIO)
+   clear the top and bottom of the first screen. The gap and the right
+   padding are that soot plus some air, so it never runs into the title or
+   gets cut off by the window edge; on wide screens the margin outside the
+   content counts towards the padding. */
 
 @media (min-width: 960px) {
   :root {
     --gutter: 48px;
-    --cover-size: min(max(520px, 44vw), 720px, 90vh - 160px);
+    --cover-size: min(40vw, 720px, (90vh - 40px) / 1.4);
+    --cover-soot: calc(var(--cover-size) * 0.2);
   }
 
   .hero {
@@ -875,10 +877,14 @@ button {
     grid-template-areas: 'content cover';
     align-items: center;
     align-content: center;
-    gap: clamp(64px, 12vw - 80px, 200px);
+    gap: calc(var(--cover-soot) + 32px);
     min-height: 90vh;
     max-width: var(--wide-width);
     padding: 72px var(--gutter);
+    padding-right: max(
+      var(--gutter),
+      var(--cover-soot) + 8px - max(0px, (100vw - var(--wide-width)) / 2)
+    );
   }
 
   .cover {
@@ -888,6 +894,11 @@ button {
   .hero__content {
     grid-area: content;
     padding: 0;
+  }
+
+  /* the hint follows the cover, not the window, or it wraps on a small cover */
+  .cover__hint {
+    font-size: min(44px, var(--cover-size) * 0.085);
   }
 
   .title {
