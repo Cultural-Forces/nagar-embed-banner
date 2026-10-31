@@ -945,7 +945,8 @@ button {
     grid-row: 2;
     align-self: start;
     max-width: 420px;
-    /*margin: 48px 0 0;*/
+    /* nothing under it in this column, so the button needs no room */
+    margin: 8px 0;
   }
 
   .about__body {
