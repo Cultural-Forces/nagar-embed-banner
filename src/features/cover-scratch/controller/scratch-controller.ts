@@ -19,7 +19,7 @@ import type { Point } from '../shared/types';
 import { computeErasedRatio } from '../model/scratch-progress';
 import { sampleLine } from '../model/line-sampler';
 import { easeInOutCubic } from '../model/settle-level';
-import { createDissolveField, createSettleField, writeFieldAlpha } from '../model/soot-field';
+import { createDissolveField, writeFieldAlpha } from '../model/soot-field';
 import { createBrushStamp } from './brush-stamp';
 
 export type ScratchControllerDeps = {
@@ -35,8 +35,6 @@ export type ScratchController = {
   disable: () => void;
   /** Stops erasing and dissolves the rest of the nagar; resolves when it is gone. */
   dissolve: (durationMs: number) => Promise<void>;
-  /** After `dissolve`: how much soot is back on the cover, 0..~0.5. */
-  setSettleLevel: (level: number) => void;
   /** Wipes a stroke along `path` by itself; stops as soon as the person starts. */
   playDemoStroke: (path: readonly Point[], durationMs: number) => void;
   cutText: (text: string, font: CutTextFont, center: Point) => void;
@@ -54,12 +52,13 @@ export type CutTextFont = {
  * What the canvas shows:
  * - scratch: the nagar minus the erase mask;
  * - dissolve: the same, minus the dissolve field at `level`;
- * - settled: only the soot that settled back, the settle field at `level`.
+ * - done: nothing; soot that settles back later is drawn around and over the
+ *   cover by the halo renderer.
  */
 type RenderMode =
   | { readonly kind: 'scratch' }
   | { readonly kind: 'dissolve'; readonly level: number }
-  | { readonly kind: 'settled'; readonly level: number };
+  | { readonly kind: 'done' };
 
 /**
  * Strokes are stamped twice: onto the visible canvas (to erase the nagar) and
@@ -90,7 +89,6 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
 
   let mode: RenderMode = { kind: 'scratch' };
   let dissolveField: Float32Array | null = null;
-  let settleField: Float32Array | null = null;
   let dissolveFrame: number | null = null;
 
   const stamp = createBrushStamp(BRUSH_TEXTURE_SIZE, Math.random);
@@ -139,13 +137,8 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   };
 
   const draw = (): void => {
-    if (mode.kind === 'settled') {
-      if (mode.level <= 0 || settleField === null) {
-        ctx.clearRect(0, 0, cssSize, cssSize);
-        return;
-      }
-      drawNagar();
-      applyField(settleField, mode.level, 'destination-in');
+    if (mode.kind === 'done') {
+      ctx.clearRect(0, 0, cssSize, cssSize);
       return;
     }
 
@@ -185,7 +178,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
 
     const finish = (): void => {
       dissolveFrame = null;
-      mode = { kind: 'settled', level: 0 };
+      mode = { kind: 'done' };
       draw();
     };
 
@@ -215,12 +208,6 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     });
   };
 
-  const setSettleLevel = (level: number): void => {
-    if (mode.kind !== 'settled' || mode.level === level) return;
-    settleField ??= createSettleField(FIELD_SIZE, FIELD_NOISE_CELLS, Math.random);
-    mode = { kind: 'settled', level };
-    draw();
-  };
 
   const stampOnto = (
     target: CanvasRenderingContext2D,
@@ -408,7 +395,6 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   return {
     disable,
     dissolve,
-    setSettleLevel,
     playDemoStroke,
     cutText,
     destroy: () => {

@@ -96,6 +96,9 @@ button {
 .page {
   flex: 1;
   width: 100%;
+  /* the soot halo around the cover must not widen the page on phones */
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Hero: cover, title and platforms on black. */
@@ -107,6 +110,8 @@ button {
 }
 
 .hero__content {
+  position: relative;
+  z-index: 1;
   padding: 0 var(--gutter) 48px;
 }
 
@@ -118,6 +123,23 @@ button {
   flex-direction: column;
   align-items: center;
   overflow: hidden;
+}
+
+/* Soot that spills from every edge of the cover onto the page once it
+   settles back on scroll (drawn by JS). The canvas is centred on the cover and
+   wider by HALO_MARGIN_RATIO (constants.ts) of its side on each edge; margins
+   in % are relative to the width, so 20% / 140% keep it square. It lies under
+   the title and buttons, never over them. */
+.cover__halo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  display: block;
+  width: 140%;
+  aspect-ratio: 1 / 1;
+  margin: -20% 0 0 -20%;
+  pointer-events: none;
 }
 
 .cover__stage {
