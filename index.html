@@ -42,6 +42,8 @@
               <img
                 class="cover__image"
                 src="/src/assets/cover.webp"
+                srcset="/src/assets/cover-540.webp 540w, /src/assets/cover-720.webp 720w, /src/assets/cover-900.webp 900w, /src/assets/cover.webp 1080w"
+                sizes="(min-width: 960px) min(40vw, 720px), min(100vw, 560px)"
                 width="1080"
                 height="1080"
                 alt="Обкладинка альбому «НАГАР» гурту Проспект Соборний"
@@ -51,6 +53,8 @@
               <img
                 class="cover__nagar"
                 src="/src/assets/nagar.webp"
+                srcset="/src/assets/nagar-540.webp 540w, /src/assets/nagar-720.webp 720w, /src/assets/nagar-900.webp 900w, /src/assets/nagar.webp 1080w"
+                sizes="(min-width: 960px) min(40vw, 720px), min(100vw, 560px)"
                 width="1080"
                 height="1080"
                 alt=""
@@ -111,8 +115,9 @@
               </span>
             </div>
             <div class="sleeve__face">
-              <img class="sleeve__nagar" src="/src/assets/nagar.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
-              <img class="sleeve__cover" src="/src/assets/cover.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
+              <!-- the hero's sizes, not the sleeve's own: the browser then reuses the file the hero already loaded -->
+              <img class="sleeve__nagar" src="/src/assets/nagar.webp" srcset="/src/assets/nagar-540.webp 540w, /src/assets/nagar-720.webp 720w, /src/assets/nagar-900.webp 900w, /src/assets/nagar.webp 1080w" sizes="(min-width: 960px) min(40vw, 720px), min(100vw, 560px)" width="1080" height="1080" alt="" loading="lazy" decoding="async">
+              <img class="sleeve__cover" src="/src/assets/cover.webp" srcset="/src/assets/cover-540.webp 540w, /src/assets/cover-720.webp 720w, /src/assets/cover-900.webp 900w, /src/assets/cover.webp 1080w" sizes="(min-width: 960px) min(40vw, 720px), min(100vw, 560px)" width="1080" height="1080" alt="" loading="lazy" decoding="async">
               <span class="sleeve__wear" aria-hidden="true"></span>
             </div>
             <button class="sleeve__reveal-button" type="button" data-sleeve-reveal>Відкрити обкладинку</button>

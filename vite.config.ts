@@ -1,4 +1,31 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
+
+/**
+ * Puts the built CSS into index.html as a <style>, so the first screen paints
+ * without waiting for one more request (14 kB, 4 kB gzipped). Its url()s
+ * start with `base`, so they resolve the same from the page.
+ */
+function inlineCss(): Plugin {
+  return {
+    name: 'inline-css',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const html = bundle['index.html'];
+      if (html === undefined || html.type !== 'asset') return;
+      let source = String(html.source);
+      for (const file of Object.values(bundle)) {
+        if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
+        const name = file.fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const link = new RegExp(`<link rel="stylesheet"[^>]*href="[^"]*${name}"[^>]*>`);
+        if (!link.test(source)) continue;
+        source = source.replace(link, () => `<style>${String(file.source)}</style>`);
+        delete bundle[file.fileName];
+      }
+      html.source = source;
+    },
+  };
+}
 
 export default defineConfig(({ command, mode }) => {
   let base = '/';
@@ -16,6 +43,7 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     base,
+    plugins: [inlineCss()],
     build: {
       target: 'es2020',
       minify: 'esbuild',
