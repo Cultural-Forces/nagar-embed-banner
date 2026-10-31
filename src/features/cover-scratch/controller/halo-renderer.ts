@@ -3,6 +3,7 @@ import {
   FIELD_SOFTNESS,
   HALO_FIELD_SIZE,
   HALO_MARGIN_RATIO,
+  HALO_SEAM_OVERLAP_PX,
   MAX_DPR,
 } from '../shared/constants';
 import { createSootField, SOOT_FULL_LEVEL, writeFieldAlpha } from '../model/soot-field';
@@ -67,12 +68,25 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
   // The nagar where the cover is, repeated around it. Its opposite edges have
   // the same brightness, so the repeat runs on past the cover edge without a
   // seam; mirroring would also be seamless but shows a crease along the edge.
+  // One repeating pattern rather than nine drawn tiles: at a fractional cover
+  // size the tiles' edges are half-transparent pixels, and the black page
+  // showed through where they met, as a thin frame along the cover edges.
+  // The pattern is made again when srcset picks another file for the nagar.
+  let pattern: CanvasPattern | null = null;
+  let patternSource = '';
   const drawTiledNagar = (): void => {
-    for (const fx of [-1, 0, 1]) {
-      for (const fy of [-1, 0, 1]) {
-        ctx.drawImage(nagar, margin + fx * coverSize, margin + fy * coverSize, coverSize, coverSize);
-      }
+    if (pattern === null || patternSource !== nagar.currentSrc) {
+      pattern = ctx.createPattern(nagar, 'repeat');
+      patternSource = nagar.currentSrc;
     }
+    if (pattern === null) return;
+    pattern.setTransform(
+      new DOMMatrix()
+        .translateSelf(margin, margin)
+        .scaleSelf(coverSize / nagar.naturalWidth, coverSize / nagar.naturalHeight),
+    );
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, side, side);
   };
 
   const draw = (amount: number, outsideOnly = false): void => {
@@ -95,7 +109,11 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(field, 0, 0, side, side);
     ctx.globalCompositeOperation = 'source-over';
-    if (outsideOnly) ctx.clearRect(margin, margin, coverSize, coverSize);
+    if (outsideOnly) {
+      // a little short of the cover edge, so the soot covers the seam with the nagar canvas
+      const inset = HALO_SEAM_OVERLAP_PX;
+      ctx.clearRect(margin + inset, margin + inset, coverSize - 2 * inset, coverSize - 2 * inset);
+    }
   };
 
   fitSize();
