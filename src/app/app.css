@@ -1,15 +1,36 @@
+/* Unbounded Black for headings: the free font closest to the presentation's wide caps. */
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../assets/fonts/unbounded-black-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('../assets/fonts/unbounded-black-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2010-2027, U+20B4;
+}
+
 :root {
-  --color-bg: #0e0d0c;
-  --color-surface: #1b1917;
-  --color-surface-hover: #2a2724;
-  --color-text: #ece7df;
-  --color-text-muted: #a8a097;
-  --color-border: rgba(236, 231, 223, 0.16);
-  --color-focus: #f2c37a;
-  --content-width: 520px;
+  --color-bg: #000;
+  --color-text: #fff;
+  --color-text-muted: #9c9c9c;
+  --color-border: rgba(255, 255, 255, 0.28);
+  --color-accent: #f2302b;
+  --color-paper: #e6e9e9;
+  --color-ink: #000;
+  --color-focus: var(--color-accent);
+  --content-width: 560px;
+  --wide-width: 1200px;
   --gutter: 20px;
-  --radius: 12px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Unbounded', 'Arial Black', var(--font);
   --reveal-duration: 600ms;
 }
 
@@ -59,18 +80,37 @@ button {
   border: 0;
 }
 
+/* Wide heavy caps: titles, buttons and labels. */
+.title,
+.about__title,
+.cover__hint,
+.cover__reveal-button,
+.platforms__link,
+.socials__link,
+.footer__label {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .page {
   flex: 1;
+  width: 100%;
+}
+
+/* Hero: cover, title and platforms on black. */
+
+.hero {
   width: 100%;
   max-width: var(--content-width);
   margin: 0 auto;
 }
 
-.page__content {
-  padding: 0 var(--gutter);
+.hero__content {
+  padding: 0 var(--gutter) 48px;
 }
 
-/* Cover: full width on phones, the reveal button must still fit the first screen. */
+/* Cover: full width on phones. */
 
 .cover {
   display: flex;
@@ -114,58 +154,116 @@ button {
   visibility: hidden;
 }
 
-.cover__hint {
+/* Hint and reveal link lie on the soot like a slide title, with no boxes.
+   They sit on the cover, so hiding them never moves the page. The overlay
+   lets strokes through; only the link takes taps. */
+.cover__overlay {
   position: absolute;
-  left: 50%;
-  bottom: 10%;
-  margin: 0;
-  padding: 8px 16px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  font-weight: 500;
-  font-size: 15px;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
   pointer-events: none;
-  transition: opacity 220ms ease;
+  transition:
+    opacity var(--reveal-duration) ease,
+    visibility 0s linear var(--reveal-duration);
+}
+
+.cover__hint {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(26px, 8.4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-shadow:
+    0 0 28px rgba(0, 0, 0, 0.55),
+    0 2px 3px rgba(0, 0, 0, 0.45);
+  transition: opacity 400ms ease;
 }
 
 .cover__hint--hidden {
   opacity: 0;
 }
 
+/* Same look as the social links: caps with a red underline. */
 .cover__reveal-button {
-  margin: 12px 0 0;
-  padding: 10px 18px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 15px;
+  margin: 0;
+  padding: 12px 8px;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  text-decoration-color: var(--color-accent);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
   cursor: pointer;
+  pointer-events: auto;
+  transition: color 150ms ease;
 }
 
 .cover__reveal-button:hover {
-  color: var(--color-text);
-  border-color: var(--color-text-muted);
+  color: var(--color-accent);
+}
+
+/* TEMP: hint variants for comparison, switched with ?hint= (see promo-page.ts).
+   gesture: no text, a demo stroke shows the move;
+   cutout: the words are wiped out of the soot on the canvas. */
+.cover[data-hint='gesture'] .cover__hint {
+  display: none;
+}
+
+.cover[data-hint='cutout'] .cover__hint {
+  visibility: hidden;
 }
 
 .cover--revealed .cover__nagar,
-.cover--revealed .cover__canvas,
-.cover--revealed .cover__hint {
+.cover--revealed .cover__overlay {
   opacity: 0;
   pointer-events: none;
 }
 
-.cover--revealed .cover__reveal-button,
+.cover--revealed .cover__overlay {
+  visibility: hidden;
+}
+
+/* After the reveal the canvas stays: JS dissolves the rest of the nagar on it
+   and later draws the soot that settles back on scroll. Touches pass through
+   to the page so the cover scrolls like any image. */
+.cover--revealed .cover__canvas {
+  pointer-events: none;
+}
+
+/* The cover takes a short breath as the soot crumbles off it. */
+@keyframes cover-breathe {
+  0% {
+    transform: none;
+  }
+
+  35% {
+    transform: scale(1.035);
+  }
+
+  100% {
+    transform: none;
+  }
+}
+
+.cover--revealed .cover__image {
+  animation: cover-breathe 1400ms cubic-bezier(0.33, 0, 0.2, 1);
+}
+
 .cover--static .cover__nagar,
-.cover--static .cover__hint,
-.cover--static .cover__reveal-button,
+.cover--static .cover__overlay,
 .no-js .cover__nagar,
-.no-js .cover__hint,
-.no-js .cover__reveal-button {
+.no-js .cover__overlay {
   display: none;
 }
 
@@ -173,30 +271,26 @@ button {
   :root {
     --reveal-duration: 0ms;
   }
+
+  .cover--revealed .cover__image {
+    animation: none;
+  }
 }
 
-/* Title */
+/* Title: red caps on black, like the first slide of the presentation. */
 
 .title {
-  margin: 28px 0 24px;
+  margin: 36px 0 32px;
+  color: var(--color-accent);
+  font-size: clamp(26px, 8.4vw, 40px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
   text-align: center;
-  line-height: 1.15;
 }
 
-.title__artist {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
+.title__artist,
 .title__album {
   display: block;
-  margin-top: 6px;
-  font-size: 44px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
 }
 
 /* Platforms */
@@ -211,82 +305,101 @@ button {
 
 .platforms__list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .platforms__link {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
-  padding: 12px 16px;
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  font-weight: 600;
+  min-height: 56px;
+  padding: 14px 16px 13px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-align: center;
   text-decoration: none;
-  transition: background-color 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 .platforms__link:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-accent);
 }
 
-/* About */
+/* About: black on light grey, like the content slides. */
 
 .about {
-  margin-top: 40px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.about__inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 48px var(--gutter) 56px;
 }
 
 .about__title {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin: 0 0 24px;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
 }
 
-.about__text {
+.about__text,
+.about__quote {
   margin: 0;
-  color: var(--color-text-muted);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.about__quote {
+  margin-top: 20px;
+  font-weight: 700;
 }
 
 /* Socials */
 
 .socials {
-  margin-top: 32px;
+  margin-top: 36px;
 }
 
 .socials__list {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 20px;
+  gap: 4px 22px;
 }
 
 .socials__link {
   display: inline-block;
   padding: 8px 0;
+  font-size: 13px;
+  letter-spacing: 0.02em;
   text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-color: var(--color-border);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  text-decoration-color: var(--color-accent);
+  transition: color 150ms ease;
 }
 
 .socials__link:hover {
-  text-decoration-color: currentColor;
+  color: var(--color-accent);
 }
 
 /* Footer */
 
 .footer {
-  margin-top: 48px;
-  padding: 24px var(--gutter) 32px;
-  border-top: 1px solid var(--color-border);
+  padding: 40px var(--gutter) 48px;
   text-align: center;
 }
 
 .footer__label {
-  margin: 0 0 12px;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0 0 16px;
+  color: var(--color-accent);
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 .footer__partners {
@@ -294,7 +407,7 @@ button {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 16px 24px;
+  gap: 16px 28px;
 }
 
 .footer__partner {
@@ -303,11 +416,81 @@ button {
 }
 
 @media (min-width: 560px) {
-  .page {
+  .hero {
     padding-top: 40px;
   }
+}
 
-  .cover__stage {
-    border-radius: var(--radius);
+/* Desktop: cover on the right, text on the left, like the presentation slides. */
+
+@media (min-width: 960px) {
+  :root {
+    --gutter: 48px;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+    grid-template-areas: 'content cover';
+    align-items: center;
+    gap: 64px;
+    max-width: var(--wide-width);
+    padding: 72px var(--gutter);
+  }
+
+  .cover {
+    grid-area: cover;
+  }
+
+  .hero__content {
+    grid-area: content;
+    padding: 0;
+  }
+
+  .title {
+    margin: 0 0 40px;
+    font-size: clamp(40px, 4.4vw, 60px);
+    text-align: left;
+  }
+
+  /* Two columns only when a button fits its label on one line
+     ("YouTube Music" is ~190px wide); otherwise one column. */
+  .platforms__list {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    max-width: 560px;
+  }
+
+  .about__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+    gap: 64px;
+    max-width: var(--wide-width);
+    padding: 96px var(--gutter) 104px;
+  }
+
+  .about__title {
+    margin: 0;
+    font-size: clamp(32px, 3.4vw, 46px);
+  }
+
+  .about__text,
+  .about__quote {
+    font-size: 19px;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    width: 100%;
+    max-width: var(--wide-width);
+    margin: 0 auto;
+    padding: 40px var(--gutter);
+    text-align: left;
+  }
+
+  .footer__label {
+    margin: 0;
   }
 }

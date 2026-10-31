@@ -13,6 +13,8 @@ const EVENT_NAMES = {
   COVER_ERROR: 'cover_error',
 } as const;
 
+const HINT_VARIANTS: readonly string[] = ['text-gesture', 'text', 'gesture', 'cutout'];
+
 export function renderPromoPage(doc: Document): void {
   loadGa(env.GA4_ID);
 
@@ -23,6 +25,13 @@ export function renderPromoPage(doc: Document): void {
 
   const coverRoot = doc.querySelector<HTMLElement>('[data-cover]');
   if (coverRoot === null) return;
+
+  // TEMP: ?hint=text|gesture|cutout|text-gesture switches the hint on the soot
+  // while we compare variants. Remove once one is chosen.
+  const hint = new URLSearchParams(doc.location.search).get('hint');
+  if (hint !== null && HINT_VARIANTS.includes(hint)) {
+    coverRoot.dataset.hint = hint;
+  }
 
   mountCoverScratch(coverRoot, {
     onScratchStart: () => {

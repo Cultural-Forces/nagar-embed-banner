@@ -1,6 +1,10 @@
 import {
   BRUSH_TEXTURE_SIZE,
+  DISSOLVE_BLUR_SIZE,
   ERASED_ALPHA_CUTOFF,
+  FIELD_NOISE_CELLS,
+  FIELD_SIZE,
+  FIELD_SOFTNESS,
   MASK_SIZE,
   MAX_DPR,
   PROBE_SIZE,
@@ -14,6 +18,8 @@ import {
 import type { Point } from '../shared/types';
 import { computeErasedRatio } from '../model/scratch-progress';
 import { sampleLine } from '../model/line-sampler';
+import { easeInOutCubic } from '../model/settle-level';
+import { createDissolveField, createSettleField, writeFieldAlpha } from '../model/soot-field';
 import { createBrushStamp } from './brush-stamp';
 
 export type ScratchControllerDeps = {
@@ -27,8 +33,33 @@ export type ScratchControllerDeps = {
 export type ScratchController = {
   /** Stops erasing; the canvas stays until the caller removes it. */
   disable: () => void;
+  /** Stops erasing and dissolves the rest of the nagar; resolves when it is gone. */
+  dissolve: (durationMs: number) => Promise<void>;
+  /** After `dissolve`: how much soot is back on the cover, 0..~0.5. */
+  setSettleLevel: (level: number) => void;
+  /** Wipes a stroke along `path` by itself; stops as soon as the person starts. */
+  playDemoStroke: (path: readonly Point[], durationMs: number) => void;
+  cutText: (text: string, font: CutTextFont, center: Point) => void;
   destroy: () => void;
 };
+
+export type CutTextFont = {
+  readonly family: string;
+  readonly weight: string;
+  /** Font size as a share of the square side. */
+  readonly sizeRatio: number;
+};
+
+/**
+ * What the canvas shows:
+ * - scratch: the nagar minus the erase mask;
+ * - dissolve: the same, minus the dissolve field at `level`;
+ * - settled: only the soot that settled back, the settle field at `level`.
+ */
+type RenderMode =
+  | { readonly kind: 'scratch' }
+  | { readonly kind: 'dissolve'; readonly level: number }
+  | { readonly kind: 'settled'; readonly level: number };
 
 /**
  * Strokes are stamped twice: onto the visible canvas (to erase the nagar) and
@@ -47,9 +78,20 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   probe.width = PROBE_SIZE;
   probe.height = PROBE_SIZE;
   const probeCtx = probe.getContext('2d', { willReadFrequently: true });
-  if (ctx === null || maskCtx === null || probeCtx === null) {
+  const field = document.createElement('canvas');
+  field.width = FIELD_SIZE;
+  field.height = FIELD_SIZE;
+  const fieldCtx = field.getContext('2d');
+  if (ctx === null || maskCtx === null || probeCtx === null || fieldCtx === null) {
     throw new Error('Canvas 2D context not available');
   }
+  const fieldImage = fieldCtx.createImageData(FIELD_SIZE, FIELD_SIZE);
+  fieldImage.data.fill(255);
+
+  let mode: RenderMode = { kind: 'scratch' };
+  let dissolveField: Float32Array | null = null;
+  let settleField: Float32Array | null = null;
+  let dissolveFrame: number | null = null;
 
   const stamp = createBrushStamp(BRUSH_TEXTURE_SIZE, Math.random);
 
@@ -86,10 +128,98 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     ctx.globalCompositeOperation = 'source-over';
   };
 
-  const render = (): void => {
-    fitSize();
+  // Coverage of a field at `level`, drawn over the whole square with `operation`.
+  const applyField = (values: Float32Array, level: number, operation: GlobalCompositeOperation): void => {
+    writeFieldAlpha(values, level, FIELD_SOFTNESS, fieldImage.data);
+    fieldCtx.putImageData(fieldImage, 0, 0);
+    ctx.globalCompositeOperation = operation;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(field, 0, 0, cssSize, cssSize);
+    ctx.globalCompositeOperation = 'source-over';
+  };
+
+  const draw = (): void => {
+    if (mode.kind === 'settled') {
+      if (mode.level <= 0 || settleField === null) {
+        ctx.clearRect(0, 0, cssSize, cssSize);
+        return;
+      }
+      drawNagar();
+      applyField(settleField, mode.level, 'destination-in');
+      return;
+    }
+
     drawNagar();
     applyMask();
+    if (mode.kind === 'dissolve' && dissolveField !== null) {
+      applyField(dissolveField, mode.level, 'destination-out');
+    }
+  };
+
+  const render = (): void => {
+    fitSize();
+    draw();
+  };
+
+  // The rest of the nagar goes first around the strokes, so the mask is blurred
+  // (drawn tiny, then scaled up) and fed into the dissolve field.
+  const buildDissolveField = (): Float32Array => {
+    const tiny = document.createElement('canvas');
+    tiny.width = DISSOLVE_BLUR_SIZE;
+    tiny.height = DISSOLVE_BLUR_SIZE;
+    tiny.getContext('2d')?.drawImage(mask, 0, 0, DISSOLVE_BLUR_SIZE, DISSOLVE_BLUR_SIZE);
+
+    fieldCtx.clearRect(0, 0, FIELD_SIZE, FIELD_SIZE);
+    fieldCtx.imageSmoothingQuality = 'high';
+    fieldCtx.drawImage(tiny, 0, 0, FIELD_SIZE, FIELD_SIZE);
+    const { data } = fieldCtx.getImageData(0, 0, FIELD_SIZE, FIELD_SIZE);
+    const erasedAlpha = new Uint8ClampedArray(FIELD_SIZE * FIELD_SIZE);
+    for (let i = 0; i < erasedAlpha.length; i++) erasedAlpha[i] = data[i * 4 + 3] ?? 0;
+
+    return createDissolveField(FIELD_SIZE, erasedAlpha, FIELD_NOISE_CELLS, Math.random);
+  };
+
+  const dissolve = (durationMs: number): Promise<void> => {
+    disable();
+    if (mode.kind !== 'scratch') return Promise.resolve();
+
+    const finish = (): void => {
+      dissolveFrame = null;
+      mode = { kind: 'settled', level: 0 };
+      draw();
+    };
+
+    if (durationMs <= 0) {
+      finish();
+      return Promise.resolve();
+    }
+
+    dissolveField = buildDissolveField();
+    const endLevel = 1 + FIELD_SOFTNESS;
+
+    return new Promise((resolve) => {
+      let start: number | null = null;
+      const tick = (now: number): void => {
+        start ??= now;
+        const t = Math.min(1, (now - start) / durationMs);
+        mode = { kind: 'dissolve', level: easeInOutCubic(t) * endLevel };
+        draw();
+        if (t < 1) {
+          dissolveFrame = requestAnimationFrame(tick);
+        } else {
+          finish();
+          resolve();
+        }
+      };
+      dissolveFrame = requestAnimationFrame(tick);
+    });
+  };
+
+  const setSettleLevel = (level: number): void => {
+    if (mode.kind !== 'settled' || mode.level === level) return;
+    settleField ??= createSettleField(FIELD_SIZE, FIELD_NOISE_CELLS, Math.random);
+    mode = { kind: 'settled', level };
+    draw();
   };
 
   const stampOnto = (
@@ -110,18 +240,64 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     target.restore();
   };
 
-  const eraseSegment = (from: Point, to: Point): void => {
-    if (!scratchStarted) {
-      scratchStarted = true;
-      deps.onScratchStart();
-    }
-
+  const stampSegment = (from: Point, to: Point): void => {
     for (const point of sampleLine(from, to, RADIUS_RATIO * STAMP_SPACING_RATIO)) {
       const angle = Math.random() * Math.PI * 2;
       const alpha = STAMP_ALPHA_MIN + Math.random() * (STAMP_ALPHA_MAX - STAMP_ALPHA_MIN);
       stampOnto(ctx, cssSize, 'destination-out', point, angle, alpha);
       stampOnto(maskCtx, MASK_SIZE, 'source-over', point, angle, alpha);
     }
+  };
+
+  // A stroke made by the person; the demo stroke and the cut-out text are not.
+  const eraseSegment = (from: Point, to: Point): void => {
+    if (!scratchStarted) {
+      scratchStarted = true;
+      deps.onScratchStart();
+    }
+    stampSegment(from, to);
+  };
+
+  let demoFrame: number | null = null;
+
+  const playDemoStroke = (path: readonly Point[], durationMs: number): void => {
+    const first = path[0];
+    if (first === undefined || !enabled || scratchStarted || demoFrame !== null) return;
+
+    let start: number | null = null;
+    let drawn = 0;
+    const tick = (now: number): void => {
+      // the person took over, or the cover was revealed
+      if (!enabled || scratchStarted) {
+        demoFrame = null;
+        return;
+      }
+      start ??= now;
+      const t = Math.min(1, (now - start) / durationMs);
+      const upTo = Math.round(easeInOutCubic(t) * (path.length - 1));
+      for (; drawn < upTo; drawn++) {
+        stampSegment(path[drawn] ?? first, path[drawn + 1] ?? first);
+      }
+      demoFrame = t < 1 ? requestAnimationFrame(tick) : null;
+    };
+    demoFrame = requestAnimationFrame(tick);
+  };
+
+  /** Wipes text out of the soot, as if written with a finger. Sizes are 0..1 of the square. */
+  const cutText = (text: string, font: CutTextFont, center: Point): void => {
+    const px = font.sizeRatio * MASK_SIZE;
+    maskCtx.save();
+    maskCtx.globalCompositeOperation = 'source-over';
+    maskCtx.fillStyle = '#fff';
+    maskCtx.font = `${font.weight} ${px}px ${font.family}`;
+    maskCtx.textAlign = 'center';
+    maskCtx.textBaseline = 'middle';
+    // soft, smudged edges instead of crisp type
+    maskCtx.shadowColor = '#fff';
+    maskCtx.shadowBlur = px * 0.18;
+    maskCtx.fillText(text, center.x * MASK_SIZE, center.y * MASK_SIZE);
+    maskCtx.restore();
+    if (mode.kind === 'scratch') render();
   };
 
   const sampleProgress = (now: number, force = false): void => {
@@ -231,8 +407,14 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
 
   return {
     disable,
+    dissolve,
+    setSettleLevel,
+    playDemoStroke,
+    cutText,
     destroy: () => {
       disable();
+      if (dissolveFrame !== null) cancelAnimationFrame(dissolveFrame);
+      if (demoFrame !== null) cancelAnimationFrame(demoFrame);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerEnd);
