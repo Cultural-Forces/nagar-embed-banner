@@ -152,15 +152,16 @@ button {
   -webkit-user-select: none;
 }
 
-/* A 16 px copy of nagar.webp, blurred: soot is on screen from the first
-   frame, before the images arrive. Regenerate it if nagar.webp changes:
-   cwebp -resize 16 16 -q 85 -sharp_yuv -m 6 -metadata none nagar.webp */
+/* A 16 px copy of cover.webp, blurred and darkened: while the images load a
+   dim red glow shows, like embers under the soot, and gives nothing of the
+   cover away. Then the nagar gathers over it. Regenerate it if cover.webp
+   changes: cwebp -resize 16 16 -q 85 -sharp_yuv -m 6 -metadata none cover.webp */
 .cover__stage::before {
   content: '';
   position: absolute;
   inset: -10%;
-  background: url('data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoQABAAAQAcJZwCdAD0fnYgWdAA/vvuAPQOJ8GQ09NFSGTUaBqj+xHZ1PlbCWg+Xx0V+7Dp+vldeksAAAA=') center / cover;
-  filter: blur(16px);
+  background: url('data:image/webp;base64,UklGRr4AAABXRUJQVlA4ILIAAAAwAwCdASoQABAAAQAcJbACdDKsPYb8mAmeDAN3ywqd6LeUAP70oXMMXleCl1Rwvy+2ktq5fjaSy4XHYA9r8/icWNE3Obs1M/JtjHGFvCY3meH8xl1y0ll++/+olg4VJdsevcBbblN5D4O3Ze5Uw2rUNr/V1h7slhv/wuhPljfwyAemKryKD2LRVMFf/A8v8zrdFBRWxH/6w/4nXVUMcWazvQ8aLT8MXY2XPlgHt2RFEmAA') center / cover;
+  filter: blur(16px) brightness(0.4);
 }
 
 .cover__image,
@@ -185,26 +186,11 @@ button {
   cursor: crosshair;
 }
 
-.cover--canvas .cover__nagar {
+/* With JS the nagar is drawn on the canvas, where it gathers in blotches over
+   the placeholder; the <img> would paint row by row on a slow network. It is
+   used only when the cover failed to load and there is no canvas. */
+.js .cover:not(.cover--image-failed) .cover__nagar {
   visibility: hidden;
-}
-
-/* The nagar <img> would paint row by row on a slow network; the blurred
-   placeholder stays until loading is over. Then the canvas and the soot past
-   its edges fade in over it. */
-.js .cover:not(.cover--ready) .cover__nagar {
-  opacity: 0;
-}
-
-.cover__canvas,
-.cover__halo {
-  animation: cover-fade-in 500ms ease backwards;
-}
-
-@keyframes cover-fade-in {
-  from {
-    opacity: 0;
-  }
 }
 
 /* On a slow network the cover may arrive before the nagar, or both come in
@@ -252,9 +238,10 @@ button {
 }
 
 /* Hint and reveal link wait until erasing works, so nobody strokes soot that
-   cannot be erased yet. They fade in once loading is over. */
-.js .cover:not(.cover--ready) .cover__hint,
-.js .cover:not(.cover--ready) .cover__reveal-button {
+   cannot be erased yet: after the nagar has gathered, or at once when it
+   failed to load and the link is the only way in. */
+.js .cover:not(.cover--canvas, .cover--nagar-failed) .cover__hint,
+.js .cover:not(.cover--canvas, .cover--nagar-failed) .cover__reveal-button {
   opacity: 0;
   visibility: hidden;
 }
@@ -443,9 +430,7 @@ button {
   .cover--revealed .cover__image,
   .cover,
   .title,
-  .platforms,
-  .cover__canvas,
-  .cover__halo {
+  .platforms {
     animation: none;
   }
 }

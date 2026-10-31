@@ -6,6 +6,7 @@ import { createDemoStroke } from './model/demo-stroke';
 import { easeInOutCubic } from './model/settle-level';
 import {
   DEMO_STROKE_DELAY_MS,
+  APPEAR_DURATION_MS,
   DEMO_STROKE_MS,
   DISSOLVE_DURATION_MS,
   EDGE_SOOT_LEVEL,
@@ -38,8 +39,9 @@ type CoverRefs = {
 
 /**
  * Enhances the static cover markup from index.html. Until the images are
- * loaded a blurred placeholder and a loader stay on screen (`cover--loading`);
- * then a canvas with the nagar fades in (`cover--ready`).
+ * loaded a dark blurred placeholder and a loader stay on screen
+ * (`cover--loading`); then the nagar gathers on a canvas over it
+ * (`cover--ready`), and once it is whole erasing starts (`cover--canvas`).
  * If an image fails to load, the cover stays closed (`cover--nagar-failed`,
  * `cover--image-failed`); if the canvas cannot start, the cover is shown as is
  * (`cover--static`).
@@ -67,7 +69,7 @@ export async function mountCoverScratch(
   // cover edges do not cut off sharply.
   const playReveal = (scratch: ScratchController): void => {
     const duration = reducedMotion ? 0 : DISSOLVE_DURATION_MS;
-    void Promise.all([scratch.dissolve(duration), fadeEdge(duration)]).then(() => {
+    void Promise.all([scratch.dissolve(duration), animateEdge(0, duration)]).then(() => {
       if (reducedMotion || scrollSettle !== null) return;
       const settleHalo = ensureHalo();
       scrollSettle = startScrollSettle({
@@ -100,20 +102,24 @@ export async function mountCoverScratch(
   };
 
   // Before the reveal soot lies past the nagar edges, so the square does not
-  // end in a straight line. Redrawn on resize to keep it sharp.
+  // end in a straight line. It grows while the nagar gathers and goes with it
+  // on reveal; redrawn on resize to keep it sharp.
+  let edgeLevel = 0;
   const drawEdge = (): void => {
     if (revealed) return;
-    ensureHalo()?.draw(EDGE_SOOT_LEVEL, true);
+    halo?.draw(edgeLevel, true);
   };
 
   let edgeFrame: number | null = null;
-  const fadeEdge = (durationMs: number): Promise<void> => {
+  const animateEdge = (to: number, durationMs: number): Promise<void> => {
     if (halo === null) return Promise.resolve();
+    const from = edgeLevel;
     return new Promise((resolve) => {
       const start = performance.now();
       const step = (now: number): void => {
         const t = durationMs > 0 ? Math.min(1, (now - start) / durationMs) : 1;
-        halo?.draw(EDGE_SOOT_LEVEL * (1 - easeInOutCubic(t)), true);
+        edgeLevel = from + (to - from) * easeInOutCubic(t);
+        halo?.draw(edgeLevel, true);
         if (t < 1) {
           edgeFrame = requestAnimationFrame(step);
         } else {
@@ -228,7 +234,7 @@ export async function mountCoverScratch(
     canvas.setAttribute('aria-hidden', 'true');
     refs.stage.insertBefore(canvas, refs.overlay);
 
-    controller = startScratchController({
+    const scratch = startScratchController({
       stage: refs.stage,
       canvas,
       nagar: refs.nagar,
@@ -238,17 +244,18 @@ export async function mountCoverScratch(
       },
       onThresholdReached: () => reveal('scratch'),
     });
-    // The canvas fades in over the placeholder (app.css). The cover under it
-    // stays hidden until the canvas is opaque, or it would show through.
-    // Browsers without getAnimations (iOS 13.0) show the cover at once.
-    const fadeIn = 'getAnimations' in canvas ? canvas.getAnimations() : [];
-    void Promise.all(fadeIn.map((animation) => animation.finished)).then(
-      () => root.classList.add('cover--canvas'),
-      () => undefined,
-    );
-    startHint(controller);
-    drawEdge();
+    controller = scratch;
+
+    // The nagar gathers in blotches over the placeholder, the soot past its
+    // edges grows with it. The cover under the canvas switches on only once
+    // the nagar is whole, or it would show through the gaps; then the hint.
+    const appearMs = reducedMotion ? 0 : APPEAR_DURATION_MS;
+    ensureHalo();
     window.addEventListener('resize', drawEdge);
+    void Promise.all([scratch.appear(appearMs), animateEdge(EDGE_SOOT_LEVEL, appearMs)]).then(() => {
+      root.classList.add('cover--canvas');
+      startHint(scratch);
+    });
   } catch (error) {
     canvas?.remove();
     canvas = null;

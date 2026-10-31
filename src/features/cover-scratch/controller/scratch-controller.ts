@@ -31,6 +31,11 @@ export type ScratchControllerDeps = {
 };
 
 export type ScratchController = {
+  /**
+   * Soot gathers on the square in blotches, the dissolve played backwards;
+   * erasing starts once it is whole. Resolves then.
+   */
+  appear: (durationMs: number) => Promise<void>;
   /** Stops erasing; the canvas stays until the caller removes it. */
   disable: () => void;
   /** Stops erasing and dissolves the rest of the nagar; resolves when it is gone. */
@@ -50,12 +55,14 @@ export type CutTextFont = {
 
 /**
  * What the canvas shows:
+ * - appear: the nagar only where the appear field is covered at `level`;
  * - scratch: the nagar minus the erase mask;
  * - dissolve: the same, minus the dissolve field at `level`;
  * - done: nothing; soot that settles back later is drawn around and over the
  *   cover by the halo renderer.
  */
 type RenderMode =
+  | { readonly kind: 'appear'; readonly level: number }
   | { readonly kind: 'scratch' }
   | { readonly kind: 'dissolve'; readonly level: number }
   | { readonly kind: 'done' };
@@ -90,6 +97,8 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   let mode: RenderMode = { kind: 'scratch' };
   let dissolveField: Float32Array | null = null;
   let dissolveFrame: number | null = null;
+  let appearField: Float32Array | null = null;
+  let appearFrame: number | null = null;
 
   const stamp = createBrushStamp(BRUSH_TEXTURE_SIZE, Math.random);
 
@@ -143,6 +152,10 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     }
 
     drawNagar();
+    if (mode.kind === 'appear' && appearField !== null) {
+      applyField(appearField, mode.level, 'destination-in');
+      return;
+    }
     applyMask();
     if (mode.kind === 'dissolve' && dissolveField !== null) {
       applyField(dissolveField, mode.level, 'destination-out');
@@ -170,6 +183,44 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     for (let i = 0; i < erasedAlpha.length; i++) erasedAlpha[i] = data[i * 4 + 3] ?? 0;
 
     return createDissolveField(FIELD_SIZE, erasedAlpha, FIELD_NOISE_CELLS, Math.random);
+  };
+
+  // Nothing is erased yet, so the field is the dissolve one with an empty mask:
+  // blotches of noise, in random order.
+  const appear = (durationMs: number): Promise<void> => {
+    if (mode.kind !== 'scratch' || durationMs <= 0) return Promise.resolve();
+
+    enabled = false;
+    appearField = createDissolveField(
+      FIELD_SIZE,
+      new Uint8ClampedArray(FIELD_SIZE * FIELD_SIZE),
+      FIELD_NOISE_CELLS,
+      Math.random,
+    );
+    const endLevel = 1 + FIELD_SOFTNESS;
+    mode = { kind: 'appear', level: 0 };
+    draw();
+
+    return new Promise((resolve) => {
+      let start: number | null = null;
+      const tick = (now: number): void => {
+        start ??= now;
+        const t = Math.min(1, (now - start) / durationMs);
+        if (t < 1) {
+          mode = { kind: 'appear', level: easeInOutCubic(t) * endLevel };
+          draw();
+          appearFrame = requestAnimationFrame(tick);
+          return;
+        }
+        appearFrame = null;
+        appearField = null;
+        mode = { kind: 'scratch' };
+        enabled = true;
+        draw();
+        resolve();
+      };
+      appearFrame = requestAnimationFrame(tick);
+    });
   };
 
   const dissolve = (durationMs: number): Promise<void> => {
@@ -393,6 +444,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
   };
 
   return {
+    appear,
     disable,
     dissolve,
     playDemoStroke,
@@ -400,6 +452,7 @@ export function startScratchController(deps: ScratchControllerDeps): ScratchCont
     destroy: () => {
       disable();
       if (dissolveFrame !== null) cancelAnimationFrame(dissolveFrame);
+      if (appearFrame !== null) cancelAnimationFrame(appearFrame);
       if (demoFrame !== null) cancelAnimationFrame(demoFrame);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
