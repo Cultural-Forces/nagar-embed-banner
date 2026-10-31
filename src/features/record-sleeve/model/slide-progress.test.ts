@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slideProgress } from './slide-progress';
+import { slideEndFraction, slideProgress } from './slide-progress';
 
 // a long page: the sleeve can scroll far above the end line
 const FAR = -10_000;
@@ -30,5 +30,28 @@ describe('slideProgress', () => {
 
   it('shows the record out when the page cannot bring the sleeve up', () => {
     expect(slideProgress(900, 300, 800, 0.45, 900)).toBe(1);
+  });
+});
+
+describe('slideEndFraction', () => {
+  it('ends where the sleeve middle reaches the end line', () => {
+    // end line at 360 px, sleeve top there at 210; the cover range runs from
+    // top 800 down to top -300, so 590 of 1100 px
+    expect(slideEndFraction(300, 800, 0.45, FAR)).toBeCloseTo(590 / 1100);
+  });
+
+  it('ends where the page stops scrolling when that is below the end line', () => {
+    expect(slideEndFraction(300, 800, 0.45, 320)).toBeCloseTo(480 / 1100);
+  });
+
+  it('matches slideProgress: the run is complete at the fraction', () => {
+    const fraction = slideEndFraction(300, 800, 0.45, FAR) ?? 0;
+    const topAtEnd = 800 - fraction * (800 + 300);
+    expect(slideProgress(topAtEnd, 300, 800, 0.45, FAR)).toBeCloseTo(1);
+    expect(slideProgress(topAtEnd + 1, 300, 800, 0.45, FAR)).toBeLessThan(1);
+  });
+
+  it('is null when the page cannot bring the sleeve up', () => {
+    expect(slideEndFraction(300, 800, 0.45, 900)).toBeNull();
   });
 });
