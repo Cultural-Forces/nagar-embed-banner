@@ -38,9 +38,6 @@
       <div class="hero">
         <section class="cover" aria-label="Обкладинка альбому" data-cover data-hint="text-gesture">
           <div class="cover__card" data-cover-card>
-            <div class="cover__record" aria-hidden="true">
-              <span class="cover__record-label"></span>
-            </div>
             <div class="cover__stage" tabindex="-1" data-cover-stage>
               <img
                 class="cover__image"
@@ -61,7 +58,6 @@
                 fetchpriority="high"
                 decoding="async"
                 data-cover-nagar>
-              <span class="cover__wear" aria-hidden="true"></span>
               <div class="cover__overlay" data-cover-overlay>
                 <div class="cover__loader" aria-hidden="true" data-cover-loader>
                   <span class="cover__spinner"></span>
@@ -107,6 +103,19 @@
       <section class="about" aria-labelledby="about-title">
         <div class="about__inner">
           <h2 class="about__title" id="about-title">Про альбом</h2>
+          <div class="sleeve" aria-hidden="true" data-sleeve>
+            <div class="sleeve__record">
+              <span class="sleeve__label">
+                <span class="sleeve__label-artist">Проспект Соборний</span>
+                <span class="sleeve__label-album">Нагар</span>
+              </span>
+            </div>
+            <div class="sleeve__face">
+              <img class="sleeve__nagar" src="/src/assets/nagar.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
+              <img class="sleeve__cover" src="/src/assets/cover.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
+              <span class="sleeve__wear"></span>
+            </div>
+          </div>
           <div class="about__body">
             <p class="about__text">
               «Нагар» — це щирий щоденник людини, яка пережила війну у своєму місті.

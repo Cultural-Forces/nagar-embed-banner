@@ -407,18 +407,14 @@ button {
     transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
     transition:
       transform 700ms cubic-bezier(0.2, 0.9, 0.3, 1.1),
-      scale 600ms cubic-bezier(0.2, 0.9, 0.3, 1.15),
-      translate 600ms cubic-bezier(0.4, 0, 0.2, 1);
+      scale 600ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
   }
 
-  /* The sleeve steps left to make room for the record coming out on the right. */
   .cover__card[data-tilt-live] {
     scale: 1.05;
-    translate: -8% 0;
     transition:
       transform 80ms linear,
-      scale 600ms cubic-bezier(0.2, 0.9, 0.3, 1.15),
-      translate 900ms cubic-bezier(0.2, 0.9, 0.3, 1.05);
+      scale 600ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
   }
 
   .cover__card::after {
@@ -450,121 +446,6 @@ button {
   .cover__card[data-tilt-live]::before {
     transition: translate 300ms ease-out;
   }
-
-  /* The record lies in the sleeve, behind the stage, and slides out to the
-     right under the pointer, spinning at 33⅓ rpm. The grooves are round, so
-     only the label shows the spin; the light on the vinyl stays put. */
-  .cover--lifted .cover__record {
-    display: block;
-  }
-
-  .cover__record {
-    position: absolute;
-    top: 2%;
-    left: 2%;
-    width: 96%;
-    aspect-ratio: 1 / 1;
-    border-radius: 50%;
-    background:
-      conic-gradient(
-        from 20deg,
-        transparent 0deg,
-        rgba(255, 255, 255, 0.16) 25deg,
-        transparent 50deg 180deg,
-        rgba(255, 255, 255, 0.11) 205deg,
-        transparent 230deg
-      ),
-      radial-gradient(circle, #121212 0 35%, transparent 35.5% 96%, #0b0b0b 96.5%),
-      repeating-radial-gradient(circle, #1d1d1d 0 1px, #0b0b0b 1px 3px);
-    /* a thin lit rim, or black vinyl on the black page is lost */
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-      0 8px 24px rgba(0, 0, 0, 0.6);
-    transition: translate 500ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .cover__card[data-tilt-live] .cover__record {
-    translate: 24% 0;
-    transition: translate 900ms cubic-bezier(0.2, 0.9, 0.3, 1.05);
-  }
-
-  .cover__record-label {
-    position: absolute;
-    inset: 33%;
-    border-radius: 50%;
-    background:
-      radial-gradient(circle, #000 0 4%, transparent 4.5%),
-      url('../assets/cover.webp') 30% 25% / 300%;
-    box-shadow: 0 0 0 2px #0a0a0a;
-    animation: record-spin 1.8s linear infinite paused;
-  }
-
-  .cover__card[data-tilt-live] .cover__record-label {
-    animation-play-state: running;
-  }
-}
-
-/* From 1440 px there is room on the right to show the label, and with it the spin. */
-@media (min-width: 1440px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .cover__card[data-tilt-live] .cover__record {
-    translate: 40% 0;
-  }
-}
-
-@keyframes record-spin {
-  to {
-    rotate: 360deg;
-  }
-}
-
-/* Exploration: the cover as a record sleeve. The record is only on desktop
-   (see above). */
-.cover__record {
-  display: none;
-}
-
-/* The sleeve under the light, once the soot is gone: a lighter edge on top,
-   paper grain, and a ring worn in by the record inside, patchy like on an
-   old sleeve. Under the canvas, so soot settling back covers it. */
-.cover__wear {
-  position: absolute;
-  inset: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--reveal-duration) ease;
-}
-
-.cover__wear::before,
-.cover__wear::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
-
-.cover__wear::before {
-  background: radial-gradient(
-    circle,
-    transparent 0 45.5%,
-    rgba(255, 255, 255, 0.09) 46.5%,
-    rgba(255, 255, 255, 0.05) 47.5%,
-    transparent 48.5%
-  );
-  -webkit-mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
-  mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
-  mix-blend-mode: screen;
-}
-
-.cover__wear::after {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
-  opacity: 0.45;
-}
-
-.cover--revealed .cover__wear {
-  opacity: 1;
 }
 
 /* The cover takes a short breath as the soot crumbles off it. */
@@ -729,6 +610,145 @@ button {
   font-weight: 700;
 }
 
+/* Record sleeve under the title: the cover as a sleeve on the paper, and the
+   record slides out of it to the right and rolls upright as the section
+   scrolls up (--sleeve-out, 0..1, from features/record-sleeve). Without JS
+   or with reduced motion the record stays out. Until the cover is opened in
+   the hero the sleeve is under nagar, so it does not give the cover away. */
+.sleeve {
+  --sleeve-out: 1;
+
+  position: relative;
+  width: 58%;
+  max-width: 320px;
+  aspect-ratio: 1 / 1;
+  /*margin: 8px 0 36px;*/
+}
+
+/* The grooves are round, so only the label shows the record turning. */
+.sleeve__record {
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  width: 96%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 20deg,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.14) 25deg,
+      transparent 50deg 180deg,
+      rgba(255, 255, 255, 0.1) 205deg,
+      transparent 230deg
+    ),
+    radial-gradient(circle, #121212 0 35%, transparent 35.5% 96%, #0b0b0b 96.5%),
+    repeating-radial-gradient(circle, #1d1d1d 0 1px, #0b0b0b 1px 3px);
+  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5);
+  /* far enough that the whole label is out */
+  translate: calc(var(--sleeve-out) * 70%) 0;
+}
+
+.sleeve__label {
+  position: absolute;
+  inset: 33%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--color-paper) 0 5%, transparent 5.5%),
+    var(--color-accent);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  container-type: inline-size;
+  rotate: calc((var(--sleeve-out) - 1) * 360deg);
+}
+
+.sleeve__label-artist {
+  max-width: 70%;
+  font-size: 9cqw;
+}
+
+.sleeve__label-album {
+  font-size: 14cqw;
+}
+
+.sleeve__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.18),
+    0 22px 40px -18px rgba(0, 0, 0, 0.55);
+}
+
+.sleeve__nagar,
+.sleeve__cover {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sleeve__cover {
+  transition: opacity 600ms ease;
+}
+
+.js .sleeve__cover {
+  opacity: 0;
+}
+
+.js:has(.cover--revealed, .cover--static) .sleeve__cover {
+  opacity: 1;
+}
+
+/* An old sleeve under the light: a lighter edge on top, paper grain, and a
+   ring worn in by the record inside, patchy like on a real one. */
+.sleeve__wear {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+.sleeve__wear::before,
+.sleeve__wear::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.sleeve__wear::before {
+  background: radial-gradient(
+    circle,
+    transparent 0 45.5%,
+    rgba(255, 255, 255, 0.09) 46.5%,
+    rgba(255, 255, 255, 0.05) 47.5%,
+    transparent 48.5%
+  );
+  -webkit-mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
+  mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
+  mix-blend-mode: screen;
+}
+
+.sleeve__wear::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.45;
+}
+
 /* Socials */
 
 .socials {
@@ -838,8 +858,23 @@ button {
   }
 
   .about__title {
+    grid-column: 1;
+    grid-row: 1;
     margin: 0;
     font-size: clamp(32px, 3.4vw, 46px);
+  }
+
+  /* the sleeve fills the left column under the title; the text runs beside both */
+  .sleeve {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    margin: 48px 0 0;
+  }
+
+  .about__body {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 
   .about__text,

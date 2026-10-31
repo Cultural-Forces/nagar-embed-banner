@@ -2,6 +2,7 @@ import { env } from '../shared/config/env';
 import { loadGa } from '../shared/lib/analytics/load-ga';
 import { sendGaEvent } from '../shared/lib/analytics/send-ga-event';
 import { mountCoverScratch } from '../features/cover-scratch';
+import { mountRecordSleeve } from '../features/record-sleeve';
 import { trackLinkClicks } from '../features/link-tracking/track-link-clicks';
 
 /** GA4 events; page_view is sent by gtag itself. */
@@ -22,6 +23,9 @@ export function renderPromoPage(doc: Document): void {
     onPlatformClick: (platform) => sendGaEvent(EVENT_NAMES.PLATFORM_CLICK, { platform }),
     onSocialClick: (network) => sendGaEvent(EVENT_NAMES.SOCIAL_CLICK, { network }),
   });
+
+  const sleeveRoot = doc.querySelector<HTMLElement>('[data-sleeve]');
+  if (sleeveRoot !== null) mountRecordSleeve(sleeveRoot);
 
   const coverRoot = doc.querySelector<HTMLElement>('[data-cover]');
   if (coverRoot === null) return;
