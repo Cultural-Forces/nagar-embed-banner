@@ -483,7 +483,7 @@ button {
 
 @keyframes cover-dim {
   to {
-    opacity: 0.35;
+    opacity: 0.2;
   }
 }
 
