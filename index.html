@@ -29,8 +29,8 @@
 
     <link rel="preload" href="/nagar-embed-banner/assets/unbounded-black-cyrillic-pjgF1Uj7.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/nagar-embed-banner/assets/unbounded-black-latin-B7RLrpii.woff2" as="font" type="font/woff2" crossorigin>
-    <script type="module" crossorigin src="/nagar-embed-banner/assets/index-CMZnxjf0.js"></script>
-    <link rel="stylesheet" crossorigin href="/nagar-embed-banner/assets/index-CoWmIDxp.css">
+    <script type="module" crossorigin src="/nagar-embed-banner/assets/index-D6jZdF7b.js"></script>
+    <link rel="stylesheet" crossorigin href="/nagar-embed-banner/assets/index-DeFu9eGY.css">
   </head>
 
   <body>
@@ -44,6 +44,7 @@
               width="1080"
               height="1080"
               alt="Обкладинка альбому «НАГАР» гурту Проспект Соборний"
+              fetchpriority="low"
               decoding="async"
               data-cover-image>
             <img
@@ -57,11 +58,25 @@
               decoding="async"
               data-cover-nagar>
             <div class="cover__overlay" data-cover-overlay>
+              <div class="cover__loader" aria-hidden="true" data-cover-loader>
+                <span class="cover__spinner"></span>
+                <span class="cover__loader-text">Завантажуємо обкладинку…</span>
+              </div>
               <p class="cover__hint" aria-hidden="true" data-cover-hint>Зітри нагар</p>
               <button class="cover__reveal-button" type="button" data-cover-reveal>або показати обкладинку</button>
             </div>
           </div>
           <p class="visually-hidden" aria-live="polite" data-cover-status></p>
+          <script>
+            // Starts the loader without waiting for the module script, which can be
+            // slow on a bad network (see .cover__loader in app.css). The style is read
+            // first, so the class lands as a change and its delays run as transitions.
+            (function (cover) {
+              getComputedStyle(cover.querySelector('[data-cover-loader]')).opacity;
+              cover.classList.add('cover--loading');
+              cover.setAttribute('aria-busy', 'true');
+            })(document.currentScript.closest('[data-cover]'));
+          </script>
         </section>
 
         <div class="hero__content">
