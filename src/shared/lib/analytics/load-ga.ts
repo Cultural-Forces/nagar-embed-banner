@@ -13,12 +13,14 @@ export function loadGa(measurementId: string): void {
   if (loaded) return;
   loaded = true;
 
+  // gtag.js only processes Arguments objects from dataLayer and silently skips
+  // arrays, so gtag must be a regular function pushing `arguments`, not `...args`.
   if (measurementId.length === 0) {
     window.dataLayer = window.dataLayer ?? [];
-    const devGtag: GtagFn = (...args) => {
-      window.dataLayer?.push(args);
+    const devGtag: GtagFn = function () {
+      window.dataLayer?.push(arguments);
       if (import.meta.env.DEV) {
-        console.debug('[gtag:dev]', ...args);
+        console.debug('[gtag:dev]', ...Array.from(arguments));
       }
     };
     window.gtag = devGtag;
@@ -31,8 +33,8 @@ export function loadGa(measurementId: string): void {
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer ?? [];
-  const gtag: GtagFn = (...args) => {
-    window.dataLayer?.push(args);
+  const gtag: GtagFn = function () {
+    window.dataLayer?.push(arguments);
   };
   window.gtag = gtag;
 

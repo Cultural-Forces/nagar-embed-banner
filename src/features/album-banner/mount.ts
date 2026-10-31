@@ -80,7 +80,9 @@ export async function mountAlbumBanner(
       redirectPath: config.redirectPath,
       label: FALLBACK_LABEL,
     });
-    fallback.root.addEventListener('click', () => {
+    fallback.root.addEventListener('click', (event) => {
+      // onClick opens the URL itself; keep href only for middle-click / a11y
+      event.preventDefault();
       handlers.onClick(config.redirectPath);
     });
     root.append(fallback.root);
