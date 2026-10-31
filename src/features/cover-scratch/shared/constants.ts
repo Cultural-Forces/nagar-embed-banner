@@ -65,5 +65,8 @@ export const DEMO_STROKE_DELAY_MS = 1200;
 /** Тривалість (мс) демонстраційного мазка. */
 export const DEMO_STROKE_MS = 800;
 
+/** Через скільки мс пробуємо ще раз завантажити картинку, що не прийшла (поганий інтернет). */
+export const IMAGE_RETRY_DELAY_MS = 1000;
+
 /** Текст для скрінрідера після розкриття. */
 export const REVEAL_STATUS_TEXT = 'Обкладинку відкрито';

@@ -41,7 +41,7 @@ export function renderPromoPage(doc: Document): void {
       sendGaEvent(EVENT_NAMES.COVER_REVEAL, { method }, { once: true });
     },
     onFailure: (error) => {
-      console.error('[cover-scratch] init failed, showing static cover', error);
+      console.error('[cover-scratch] init failed', error);
       sendGaEvent(EVENT_NAMES.COVER_ERROR, { message: error.message });
     },
   }).catch((error: unknown) => {

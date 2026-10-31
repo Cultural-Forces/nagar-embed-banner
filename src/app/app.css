@@ -151,6 +151,17 @@ button {
   -webkit-user-select: none;
 }
 
+/* A 16 px copy of nagar.webp, blurred: soot is on screen from the first
+   frame, before the images arrive. Regenerate it if nagar.webp changes:
+   cwebp -resize 16 16 -q 85 -sharp_yuv -m 6 -metadata none nagar.webp */
+.cover__stage::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  background: url('data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoQABAAAQAcJZwCdAD0fnYgWdAA/vvuAPQOJ8GQ09NFSGTUaBqj+xHZ1PlbCWg+Xx0V+7Dp+vldeksAAAA=') center / cover;
+  filter: blur(16px);
+}
+
 .cover__image,
 .cover__nagar,
 .cover__canvas {
@@ -174,6 +185,14 @@ button {
 }
 
 .cover--canvas .cover__nagar {
+  visibility: hidden;
+}
+
+/* On a slow network the cover may arrive before the nagar, or both come in
+   row by row, and the cover would show through. It stays hidden until
+   erasing is ready, the person asks for it, or the static fallback is on.
+   Without JS the cover is shown as is. */
+.js .cover:not(.cover--canvas, .cover--revealed, .cover--static) .cover__image {
   visibility: hidden;
 }
 
@@ -287,6 +306,20 @@ button {
 .cover--static .cover__overlay,
 .no-js .cover__nagar,
 .no-js .cover__overlay {
+  display: none;
+}
+
+/* The nagar did not load even after a retry: nothing to erase, so the
+   placeholder soot stays and only the button opens the cover. */
+.cover--nagar-failed .cover__nagar,
+.cover--nagar-failed .cover__hint {
+  display: none;
+}
+
+/* The cover did not load: keep the soot instead of an empty square and
+   offer nothing to reveal. */
+.cover--image-failed .cover__image,
+.cover--image-failed .cover__overlay {
   display: none;
 }
 

@@ -1,13 +1,14 @@
 import { createHaloRenderer, type HaloRenderer } from './controller/halo-renderer';
 import { startScratchController, type ScratchController } from './controller/scratch-controller';
 import { startScrollSettle, type ScrollSettle } from './controller/scroll-settle';
-import { waitForImage } from './controller/wait-for-image';
+import { waitForImageWithRetry } from './controller/wait-for-image';
 import { createDemoStroke } from './model/demo-stroke';
 import {
   DEMO_STROKE_DELAY_MS,
   DEMO_STROKE_MS,
   DISSOLVE_DURATION_MS,
   HINT_HIDE_DELAY_MS,
+  IMAGE_RETRY_DELAY_MS,
   REVEAL_STATUS_TEXT,
 } from './shared/constants';
 import type { RevealMethod } from './shared/types';
@@ -36,7 +37,9 @@ type CoverRefs = {
 /**
  * Enhances the static cover markup from index.html. Until the images are
  * decoded the <img> with the nagar stays on screen; then a canvas replaces it.
- * If the canvas cannot start, the cover is shown as is (`cover--static`).
+ * If an image fails to load, the cover stays closed (`cover--nagar-failed`,
+ * `cover--image-failed`); if the canvas cannot start, the cover is shown as is
+ * (`cover--static`).
  */
 export async function mountCoverScratch(
   root: HTMLElement,
@@ -151,10 +154,23 @@ export async function mountCoverScratch(
     },
   };
 
-  try {
-    await Promise.all([waitForImage(refs.image), waitForImage(refs.nagar)]);
-    if (revealed) return instance;
+  // A failed image must not open the cover by itself: without the nagar the
+  // placeholder soot and the button stay, without the cover the soot stays.
+  const [imageLoad, nagarLoad] = await Promise.allSettled([
+    waitForImageWithRetry(refs.image, IMAGE_RETRY_DELAY_MS),
+    waitForImageWithRetry(refs.nagar, IMAGE_RETRY_DELAY_MS),
+  ]);
+  if (imageLoad.status === 'rejected') root.classList.add('cover--image-failed');
+  if (nagarLoad.status === 'rejected') root.classList.add('cover--nagar-failed');
+  const loadFailure = [imageLoad, nagarLoad].find((result): result is PromiseRejectedResult => result.status === 'rejected');
+  if (loadFailure !== undefined) {
+    const { reason } = loadFailure;
+    handlers.onFailure?.(reason instanceof Error ? reason : new Error('cover-scratch image load failed'));
+    return instance;
+  }
+  if (revealed) return instance;
 
+  try {
     canvas = document.createElement('canvas');
     canvas.className = 'cover__canvas';
     canvas.setAttribute('aria-hidden', 'true');
