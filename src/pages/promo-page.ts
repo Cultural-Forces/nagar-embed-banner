@@ -47,6 +47,8 @@ export function renderPromoPage(doc: Document): void {
   }).catch((error: unknown) => {
     // markup is broken; the cover stays static via CSS
     console.error('[cover-scratch] mount failed', error);
+    coverRoot.classList.remove('cover--loading');
+    coverRoot.removeAttribute('aria-busy');
     coverRoot.classList.add('cover--static');
   });
 }
