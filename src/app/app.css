@@ -865,30 +865,34 @@ button {
    content counts towards the padding. The text column stops at 560 px, as
    wide as the platform buttons, and the pair is centred: when the window
    height keeps the cover small, the spare width goes to the sides, not into
-   a hole between the text and the cover. */
+   a hole between the text and the cover. «Про альбом» and the partners use
+   the same columns, gap and padding, so every section has the same edges. */
 
 @media (min-width: 960px) {
   :root {
     --gutter: 48px;
     --cover-size: min(40vw, 720px, (90vh - 40px) / 1.4);
     --cover-soot: calc(var(--cover-size) * 0.2);
+    --stage-columns: minmax(0, 560px) var(--cover-size);
+    --stage-gap: calc(var(--cover-soot) + 32px);
+    --stage-padding-right: max(
+      var(--gutter),
+      var(--cover-soot) + 8px - max(0px, (100vw - var(--wide-width)) / 2)
+    );
   }
 
   .hero {
     display: grid;
-    grid-template-columns: minmax(0, 560px) var(--cover-size);
+    grid-template-columns: var(--stage-columns);
     grid-template-areas: 'content cover';
     justify-content: center;
     align-items: center;
     align-content: center;
-    gap: calc(var(--cover-soot) + 32px);
+    gap: var(--stage-gap);
     min-height: 90vh;
     max-width: var(--wide-width);
     padding: 72px var(--gutter);
-    padding-right: max(
-      var(--gutter),
-      var(--cover-soot) + 8px - max(0px, (100vw - var(--wide-width)) / 2)
-    );
+    padding-right: var(--stage-padding-right);
   }
 
   .cover {
@@ -920,10 +924,12 @@ button {
 
   .about__inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
-    gap: 64px;
+    grid-template-columns: var(--stage-columns);
+    justify-content: center;
+    gap: 64px var(--stage-gap);
     max-width: var(--wide-width);
     padding: 96px var(--gutter) 104px;
+    padding-right: var(--stage-padding-right);
   }
 
   .about__title {
@@ -952,16 +958,23 @@ button {
     font-size: 19px;
   }
 
+  /* the label in the text column, the partners flush with the cover's right edge */
   .footer {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--stage-columns);
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    gap: 32px;
+    gap: 32px var(--stage-gap);
     width: 100%;
     max-width: var(--wide-width);
     margin: 0 auto;
     padding: 40px var(--gutter);
+    padding-right: var(--stage-padding-right);
     text-align: left;
+  }
+
+  .footer__partners {
+    justify-content: flex-end;
   }
 
   .footer__label {
