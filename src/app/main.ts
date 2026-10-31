@@ -1,8 +1,3 @@
-import { renderEmbedAlbumBannerPage } from '../pages/embed-album-banner-page';
+import { renderPromoPage } from '../pages/promo-page';
 
-const root = document.getElementById('app');
-if (root === null) {
-  throw new Error('#app root element not found');
-}
-
-void renderEmbedAlbumBannerPage(root);
+renderPromoPage(document);

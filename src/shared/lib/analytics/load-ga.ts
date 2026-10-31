@@ -39,5 +39,6 @@ export function loadGa(measurementId: string): void {
   window.gtag = gtag;
 
   gtag('js', new Date());
-  gtag('config', measurementId, { send_page_view: false });
+  // page_view stays on: it carries source, device and city; UTM tags are parsed by GA4
+  gtag('config', measurementId);
 }
