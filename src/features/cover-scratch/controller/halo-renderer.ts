@@ -17,18 +17,18 @@ export type HaloRendererDeps = {
 
 export type HaloRenderer = {
   /**
-   * `amount` 0..1: how much of the soot has settled back (0 = none, 1 = all).
-   * `outsideOnly` keeps the cover itself clear: before the reveal the nagar
-   * canvas is there, and soot over it would not erase.
+   * `amount` 0..1: how far the soot reaches out (0 = none, 1 = all of it).
+   * The cover itself stays clear: the nagar canvas is there, and soot over it
+   * would not erase.
    */
-  draw: (amount: number, outsideOnly?: boolean) => void;
+  draw: (amount: number) => void;
 };
 
 /**
- * Soot that settles back after the reveal, over the cover and around it in one
- * layer: it creeps in from the cover edges and spills out onto the page, so the
- * cover never ends in a hard line. The texture is the nagar repeated around the
- * cover, which continues it without a seam; on the page it thins out into black.
+ * Soot past the nagar edges before the reveal: it spills from the cover out
+ * onto the page, so the cover never ends in a hard line. The texture is the
+ * nagar repeated around the cover, which continues it without a seam; on the
+ * page it thins out into black.
  */
 export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
   const { stage, canvas, nagar } = deps;
@@ -50,7 +50,6 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
   let margin = 0;
   let side = 0;
   let lastAmount = -1;
-  let lastOutsideOnly = false;
 
   const fitSize = (): void => {
     coverSize = Math.max(1, stage.getBoundingClientRect().width);
@@ -99,11 +98,10 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
     ctx.fillRect(0, 0, side, side);
   };
 
-  const draw = (amount: number, outsideOnly = false): void => {
+  const draw = (amount: number): void => {
     const sizeChanged = Math.abs(stage.getBoundingClientRect().width - coverSize) > 0.5;
-    if (!sizeChanged && amount === lastAmount && outsideOnly === lastOutsideOnly) return;
+    if (!sizeChanged && amount === lastAmount) return;
     lastAmount = amount;
-    lastOutsideOnly = outsideOnly;
     if (sizeChanged) fitSize();
 
     ctx.globalCompositeOperation = 'source-over';
@@ -112,18 +110,16 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
 
     drawTiledNagar();
 
-    // keep it only where soot has settled, thinning out on the page
+    // keep it only where the soot reaches, thinning out on the page
     writeFieldAlpha(values, Math.min(1, amount) * SOOT_FULL_LEVEL, FIELD_SOFTNESS, image.data, fade);
     fieldCtx.putImageData(image, 0, 0);
     ctx.globalCompositeOperation = 'destination-in';
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(field, 0, 0, side, side);
     ctx.globalCompositeOperation = 'source-over';
-    if (outsideOnly) {
-      // a little short of the cover edge, so the soot covers the seam with the nagar canvas
-      const inset = HALO_SEAM_OVERLAP_PX;
-      ctx.clearRect(margin + inset, margin + inset, coverSize - 2 * inset, coverSize - 2 * inset);
-    }
+    // a little short of the cover edge, so the soot covers the seam with the nagar canvas
+    const inset = HALO_SEAM_OVERLAP_PX;
+    ctx.clearRect(margin + inset, margin + inset, coverSize - 2 * inset, coverSize - 2 * inset);
   };
 
   fitSize();

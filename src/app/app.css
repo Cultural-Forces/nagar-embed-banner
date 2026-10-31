@@ -359,9 +359,8 @@ button {
   visibility: hidden;
 }
 
-/* After the reveal the canvas stays: JS dissolves the rest of the nagar on it
-   and later draws the soot that settles back on scroll. Touches pass through
-   to the page so the cover scrolls like any image. */
+/* After the reveal the canvas stays while JS dissolves the rest of the nagar
+   on it. Touches pass through to the page so the cover scrolls like any image. */
 .cover--revealed .cover__canvas {
   pointer-events: none;
 }
@@ -369,8 +368,7 @@ button {
 /* Desktop with a mouse: once the soot is gone the cover comes forward like a
    card in the hand. A red glow lies under it; under the pointer it grows a
    little and turns after it, with a glare, and the glow shifts after the
-   pointer (card-tilt.ts sets the variables). The glow dims as soot settles
-   back on scroll (--cover-settle from mount.ts). Keep the query in sync with
+   pointer (card-tilt.ts sets the variables). Keep the query in sync with
    TILT_MEDIA in constants.ts. */
 @media (min-width: 960px) and (hover: hover) and (pointer: fine) {
   /* keeps the glow behind the stage, not behind the page */
@@ -390,7 +388,7 @@ button {
   }
 
   .cover--lifted .cover__card::before {
-    opacity: calc(0.55 * (1 - var(--cover-settle, 0)));
+    opacity: 0.55;
     animation: cover-glow-in 1200ms ease backwards;
   }
 }

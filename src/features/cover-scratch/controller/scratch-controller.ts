@@ -18,7 +18,7 @@ import {
 import type { Point } from '../shared/types';
 import { computeErasedRatio } from '../model/scratch-progress';
 import { sampleLine } from '../model/line-sampler';
-import { easeInOutCubic } from '../model/settle-level';
+import { easeInOutCubic } from '../model/easing';
 import { createDissolveField, writeFieldAlpha } from '../model/soot-field';
 import { createBrushStamp } from './brush-stamp';
 
