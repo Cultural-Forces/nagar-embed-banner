@@ -436,11 +436,11 @@ button {
     opacity: 1;
   }
 
-  /* At rest the glow leans to the top left, under the red sky of the cover.
+  /* At rest the glow leans to the bottom right, away from the red title.
      It trails the pointer a step behind the card and drifts back when the
      pointer leaves. */
   .cover__card::before {
-    translate: calc(var(--pointer-x, -0.6) * 10%) calc(var(--pointer-y, -0.6) * 10%);
+    translate: calc(var(--pointer-x, 0.6) * 10%) calc(var(--pointer-y, 0.6) * 10%);
     transition: translate 700ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
   }
 
@@ -856,14 +856,14 @@ button {
 }
 
 /* Desktop: cover on the right, text on the left, like the presentation slides.
-   The first screen fills the window, so «Про альбом» starts below it, and the
-   cover grows with the screen: from 520 px up to 720 px, never taller than
-   the window minus the padding around it. */
+   The first screen takes 90% of the window, so only the top of «Про альбом»
+   shows under it, and the cover grows with the screen: from 520 px up to
+   720 px, never taller than the first screen minus the padding around it. */
 
 @media (min-width: 960px) {
   :root {
     --gutter: 48px;
-    --cover-size: min(max(520px, 44vw), 720px, 100vh - 160px);
+    --cover-size: min(max(520px, 44vw), 720px, 90vh - 160px);
   }
 
   .hero {
@@ -873,7 +873,7 @@ button {
     align-items: center;
     align-content: center;
     gap: 64px;
-    min-height: 100vh;
+    min-height: 90vh;
     max-width: var(--wide-width);
     padding: 72px var(--gutter);
   }
