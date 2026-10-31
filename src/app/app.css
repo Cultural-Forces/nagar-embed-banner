@@ -471,7 +471,8 @@ button {
    into the dark blurred copy under it, from the moment its top reaches the top of the
    window until it is gone. On a phone the picture also sinks into its
    frame: it grows to 1.2 inside the stage, which clips it, so nothing
-   spills past the full-width cover. Only once the cover is open: before,
+   spills past the full-width cover. On desktop the red glow under it goes
+   out too. Only once the cover is open: before,
    the nagar is being erased. Off with reduced motion and where scroll
    timelines are missing. */
 @keyframes cover-sink {
@@ -484,6 +485,12 @@ button {
 @keyframes cover-dim {
   to {
     opacity: 0.1;
+  }
+}
+
+@keyframes cover-glow-out {
+  to {
+    opacity: 0;
   }
 }
 
@@ -505,6 +512,17 @@ button {
   @media (prefers-reduced-motion: no-preference) and (min-width: 960px) {
     .cover--revealed .cover__image {
       animation-name: cover-breathe, cover-dim;
+    }
+  }
+
+  /* the red glow under the cover goes out with it */
+  @media (prefers-reduced-motion: no-preference) and (min-width: 960px) and (hover: hover) and (pointer: fine) {
+    .cover--lifted .cover__card::before {
+      animation:
+        cover-glow-in 1200ms ease backwards,
+        cover-glow-out linear both;
+      animation-timeline: auto, --cover-away;
+      animation-range: normal, exit 0% exit 100%;
     }
   }
 }
