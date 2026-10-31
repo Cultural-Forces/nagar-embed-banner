@@ -104,9 +104,11 @@ button {
 /* Hero: cover, title and platforms on black. */
 
 .hero {
+  position: relative;
   width: 100%;
   max-width: var(--content-width);
   margin: 0 auto;
+  overflow: hidden;
 }
 
 .hero__content {
@@ -118,11 +120,9 @@ button {
 /* Cover: full width on phones. */
 
 .cover {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
 }
 
 /* Soot that spills from every edge of the cover onto the page once it
