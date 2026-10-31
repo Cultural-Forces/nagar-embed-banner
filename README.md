@@ -12,7 +12,8 @@
 - Canvas 2D API + Pointer Events
 - GA4 via `gtag`
 - Vitest для чистої логіки в `model/*`
-- Cloudflare Pages, статика без серверних функцій
+- статика без серверних функцій: тестова збірка на GitHub Pages, для релізу
+  є конфіг Cloudflare Pages (`wrangler.toml`)
 
 ## Як влаштовано
 
@@ -20,25 +21,42 @@
 готової розмітки:
 
 - без JS (`html.no-js`) видно обкладинку і всі посилання;
-- поки зображення вантажаться, нагар показує звичайний `<img>`;
-- коли обидва зображення завантажені, його місце займає canvas (`cover--canvas`);
+- поки зображення вантажаться (`cover--loading`), видно розмиту копію нагару
+  з CSS і лоадер; обкладинку сховано, щоб на поганому інтернеті вона не
+  просвічувала. Цей клас ставить inline-скрипт в `index.html`, тож лоадер не
+  чекає на JS-модуль;
+- коли обидва зображення завантажені (`cover--ready`), поверх проявляється
+  canvas з нагаром, а шар обкладинки під ним вмикається, лише коли canvas
+  непрозорий (`cover--canvas`);
+- картинку, що не завантажилась, JS запитує ще раз через 1 с. Якщо й друга
+  спроба не вдалась, без нагару лишаються розмита сажа й кнопка
+  (`cover--nagar-failed`), а без обкладинки лишається нагар без кнопки
+  (`cover--image-failed`);
 - якщо canvas не стартував, лишається обкладинка без стирання (`cover--static`).
 
 Що бачить людина:
 
-1. На нагарі напис «Зітри нагар». Через 1,2 с, якщо ніхто не почав стирати,
-   нагар сам показує короткий мазок.
-2. Обкладинка відкривається, коли стерто 85 % площі або натиснуто «Показати
-   обкладинку». Решта шару розсипається плямами за 1,1 с, обкладинка коротко
-   «вдихає».
-3. Коли відкриту обкладинку гортають вгору, кіптява повертається від країв:
+1. Обкладинка, заголовок і кнопки платформ з'являються один за одним з легким
+   підйомом, за 0,7 с.
+2. Поки вантажаться зображення, на обкладинці розмита сажа. Якщо це триває
+   довше за 400 мс, з'являється кільце-лоадер, після 3 с під ним напис
+   «Завантажуємо обкладинку…». На швидкому інтернеті лоадера не видно.
+3. Коли все завантажилось, нагар проявляється за 0,5 с. За його краї на
+   сторінку виходить трохи кіптяви, тож квадрат не обривається рівною лінією.
+   Потім з'являються напис «Зітри нагар» і кнопка «або показати обкладинку».
+   Через 1,2 с, якщо ніхто не почав стирати, нагар сам показує короткий мазок.
+4. Обкладинка відкривається, коли стерто 85 % площі або натиснуто кнопку.
+   Решта шару разом з кіптявою за краями розсипається плямами за 1,1 с,
+   обкладинка коротко «вдихає».
+5. Коли відкриту обкладинку гортають вгору, кіптява повертається від країв:
    наповзає на обкладинку (до третини площі) і перетікає з неї на сторінку,
    десь ледь торкаючись краю, десь язиками. Обкладинка й сторінка навколо неї
    — один шар на окремому canvas `cover__halo`, тож на межі немає лінії. Якщо
    горнути назад, кіптява сходить.
 
-З `prefers-reduced-motion: reduce` немає демо-мазка, розсипання й повернення
-кіптяви: шар зникає одразу.
+З `prefers-reduced-motion: reduce` немає появи першого екрана, проявлення
+нагару, демо-мазка, розсипання й повернення кіптяви: шар зникає одразу.
+Лоадер крутиться й тоді.
 
 Тимчасово: параметр `?hint=text-gesture|text|gesture|cutout` перемикає варіант
 підказки, щоб їх порівняти. За замовчуванням `text-gesture`. Коли варіант
@@ -99,7 +117,31 @@ In dev with empty `VITE_GA4_ID`, `gtag` is stubbed to `console.debug`.
 Якщо в `VITE_SITE_URL` є шлях (`https://org.github.io/nagar`), Vite бере його як
 `base`, і сторінка працює з підпапки.
 
-## Deploy (Cloudflare Pages)
+## Deploy
+
+### GitHub Pages (тестова збірка)
+
+Живе на https://cultural-forces.github.io/nagar-embed-banner/. GitHub Pages
+роздає гілку `gh-pages` як є, автоматичної збірки немає: `dist` з `main`
+треба зібрати й закомітити туди вручну.
+
+```sh
+git switch main && git pull
+# VITE_GA4_ID порожній, поки немає справжнього ID; інакше підставиться той, що в .env
+VITE_GA4_ID= VITE_SITE_URL=https://cultural-forces.github.io/nagar-embed-banner npm run build
+git worktree add --detach ../gh-pages-deploy origin/gh-pages
+cd ../gh-pages-deploy
+git rm -rq . && cp -R ../nagar-embed-banner/dist/. . && touch .nojekyll
+git add -A && git commit -m "deploy build of $(git -C ../nagar-embed-banner rev-parse --short HEAD)"
+git push origin HEAD:gh-pages
+cd - && git worktree remove ../gh-pages-deploy
+```
+
+`.nojekyll` вимикає Jekyll, інакше GitHub пропустить файли, які той вважає
+службовими. `public/_headers` GitHub Pages ігнорує і ставить свої заголовки
+кешування.
+
+### Cloudflare Pages (реліз)
 
 1. Підключити репозиторій, build command `npm run build`, output `dist`.
 2. Задати `VITE_GA4_ID` і `VITE_SITE_URL` у налаштуваннях Pages.
@@ -115,7 +157,8 @@ In dev with empty `VITE_GA4_ID`, `gtag` is stubbed to `console.debug`.
 - посилання на сторінки гурту;
 - логотипи партнерів у SVG.
 
-У день релізу: підставити посилання від BestMusic, закомітити, дочекатися деплою.
+У день релізу: підставити посилання від BestMusic, закомітити й задеплоїти (на
+Cloudflare Pages збірка запускається сама, на GitHub Pages вручну, див. Deploy).
 
 ## GA4 events
 
@@ -126,12 +169,15 @@ In dev with empty `VITE_GA4_ID`, `gtag` is stubbed to `console.debug`.
 | `cover_reveal` | 85% erased or the button | `method`: `scratch` / `button` | once per page load |
 | `platform_click` | click on a platform link | `platform` | every click |
 | `social_click` | click on a social link | `network` | every click |
-| `cover_error` | canvas failed to start | `message` | every time |
+| `cover_error` | an image failed to load after a retry, or canvas failed to start | `message` | every time |
 
 ## Assets
 
 - `src/assets/cover.webp` і `src/assets/nagar.webp`: обкладинка і шар нагару,
-  квадрат, WebP близько 860 px по стороні.
+  квадрат 1080×1080, WebP.
+- Розмита копія нагару вбудована в `app.css` (`.cover__stage::before`) як
+  data URI на 86 байт. Після заміни `nagar.webp` її треба перегенерувати,
+  команда в коментарі поруч.
 - `src/assets/fonts/`: Unbounded Black, окремо кирилиця й латиниця, обидва
   файли з `preload` в `index.html`.
 - `public/og.jpg` (1200×630) і `public/apple-touch-icon.png` зроблені з
