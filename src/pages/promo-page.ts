@@ -41,12 +41,14 @@ export function renderPromoPage(doc: Document): void {
       sendGaEvent(EVENT_NAMES.COVER_REVEAL, { method }, { once: true });
     },
     onFailure: (error) => {
-      console.error('[cover-scratch] init failed, showing static cover', error);
+      console.error('[cover-scratch] init failed', error);
       sendGaEvent(EVENT_NAMES.COVER_ERROR, { message: error.message });
     },
   }).catch((error: unknown) => {
     // markup is broken; the cover stays static via CSS
     console.error('[cover-scratch] mount failed', error);
+    coverRoot.classList.remove('cover--loading');
+    coverRoot.removeAttribute('aria-busy');
     coverRoot.classList.add('cover--static');
   });
 }

@@ -85,6 +85,7 @@ button {
 .about__title,
 .cover__hint,
 .cover__reveal-button,
+.cover__loader-text,
 .platforms__link,
 .socials__link,
 .footer__label {
@@ -124,8 +125,8 @@ button {
   align-items: center;
 }
 
-/* Soot that spills from every edge of the cover onto the page once it
-   settles back on scroll (drawn by JS). The canvas is centred on the cover and
+/* Soot that spills from every edge of the cover onto the page: a ragged edge
+   before the reveal, then soot settling back on scroll (drawn by JS). The canvas is centred on the cover and
    wider by HALO_MARGIN_RATIO (constants.ts) of its side on each edge; margins
    in % are relative to the width, so 20% / 140% keep it square. It lies under
    the title and buttons, never over them. */
@@ -151,6 +152,17 @@ button {
   -webkit-user-select: none;
 }
 
+/* A 16 px copy of nagar.webp, blurred: soot is on screen from the first
+   frame, before the images arrive. Regenerate it if nagar.webp changes:
+   cwebp -resize 16 16 -q 85 -sharp_yuv -m 6 -metadata none nagar.webp */
+.cover__stage::before {
+  content: '';
+  position: absolute;
+  inset: -10%;
+  background: url('data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoQABAAAQAcJZwCdAD0fnYgWdAA/vvuAPQOJ8GQ09NFSGTUaBqj+xHZ1PlbCWg+Xx0V+7Dp+vldeksAAAA=') center / cover;
+  filter: blur(16px);
+}
+
 .cover__image,
 .cover__nagar,
 .cover__canvas {
@@ -174,6 +186,32 @@ button {
 }
 
 .cover--canvas .cover__nagar {
+  visibility: hidden;
+}
+
+/* The nagar <img> would paint row by row on a slow network; the blurred
+   placeholder stays until loading is over. Then the canvas and the soot past
+   its edges fade in over it. */
+.js .cover:not(.cover--ready) .cover__nagar {
+  opacity: 0;
+}
+
+.cover__canvas,
+.cover__halo {
+  animation: cover-fade-in 500ms ease backwards;
+}
+
+@keyframes cover-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* On a slow network the cover may arrive before the nagar, or both come in
+   row by row, and the cover would show through. It stays hidden until
+   erasing is ready, the person asks for it, or the static fallback is on.
+   Without JS the cover is shown as is. */
+.js .cover:not(.cover--canvas, .cover--revealed, .cover--static) .cover__image {
   visibility: hidden;
 }
 
@@ -213,6 +251,66 @@ button {
   opacity: 0;
 }
 
+/* Hint and reveal link wait until erasing works, so nobody strokes soot that
+   cannot be erased yet. They fade in once loading is over. */
+.js .cover:not(.cover--ready) .cover__hint,
+.js .cover:not(.cover--ready) .cover__reveal-button {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Loader from the Pihota Army site: a ring with a bright top. It shows only
+   when loading takes longer than 400 ms, so a fast network never sees it, and
+   after 3 s it says what it is waiting for. `cover--loading` is set by an
+   inline script in index.html once the style is computed, so these delays run
+   as transitions; on ready it fades out. */
+.cover__loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.cover__spinner {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: cover-spin 1s linear infinite;
+}
+
+.cover__loader-text {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.cover--loading .cover__loader {
+  opacity: 1;
+  transition-delay: 400ms;
+}
+
+.cover--loading .cover__loader-text {
+  opacity: 1;
+  transition-delay: 3s;
+}
+
+@keyframes cover-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Same look as the social links: caps with a red underline. Muted and at the
    bottom, so it does not pull the eye from the hint or block the middle. */
 .cover__reveal-button {
@@ -236,7 +334,9 @@ button {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   pointer-events: auto;
-  transition: color 150ms ease;
+  transition:
+    color 150ms ease,
+    opacity 400ms ease;
 }
 
 .cover__reveal-button:hover,
@@ -298,12 +398,54 @@ button {
   display: none;
 }
 
+/* The nagar did not load even after a retry: nothing to erase, so the
+   placeholder soot stays and only the button opens the cover. */
+.cover--nagar-failed .cover__nagar,
+.cover--nagar-failed .cover__hint {
+  display: none;
+}
+
+/* The cover did not load: keep the soot instead of an empty square and
+   offer nothing to reveal. */
+.cover--image-failed .cover__image,
+.cover--image-failed .cover__overlay {
+  display: none;
+}
+
+/* The first screen comes in one motion: cover, then title, then platforms.
+   Plain CSS, so it plays even if the script is late. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.cover,
+.title,
+.platforms {
+  animation: hero-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.title {
+  animation-delay: 100ms;
+}
+
+.platforms {
+  animation-delay: 200ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --reveal-duration: 0ms;
   }
 
-  .cover--revealed .cover__image {
+  .cover--revealed .cover__image,
+  .cover,
+  .title,
+  .platforms,
+  .cover__canvas,
+  .cover__halo {
     animation: none;
   }
 }
