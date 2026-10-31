@@ -644,7 +644,8 @@ button {
       rgba(255, 255, 255, 0.1) 205deg,
       transparent 230deg
     ),
-    radial-gradient(circle, #121212 0 35%, transparent 35.5% 96%, #0b0b0b 96.5%),
+    /* % of the radius (closest-side): dead wax round the label, a dark rim at the edge */
+    radial-gradient(circle closest-side, #121212 0 46%, transparent 47% 96%, #0b0b0b 97%),
     repeating-radial-gradient(circle, #1d1d1d 0 1px, #0b0b0b 1px 3px);
   box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5);
   /* far enough that the whole label is out */
@@ -776,12 +777,14 @@ button {
 }
 
 .sleeve__wear::before {
+  /* along the edge of the record inside: it is 96% of the sleeve, so the
+     ring sits at 96% of the radius (closest-side) */
   background: radial-gradient(
-    circle,
-    transparent 0 45.5%,
-    rgba(255, 255, 255, 0.09) 46.5%,
-    rgba(255, 255, 255, 0.05) 47.5%,
-    transparent 48.5%
+    circle closest-side,
+    transparent 0 93.5%,
+    rgba(255, 255, 255, 0.09) 95%,
+    rgba(255, 255, 255, 0.05) 96.5%,
+    transparent 98%
   );
   -webkit-mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
   mask-image: conic-gradient(from 120deg, #000, transparent 70deg 150deg, #000 220deg, rgba(0, 0, 0, 0.4) 300deg, #000);
