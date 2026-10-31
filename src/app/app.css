@@ -650,6 +650,9 @@ button {
   box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.5);
   /* far enough that the whole label is out */
   translate: calc(var(--sleeve-out) * 70%) 0;
+  /* its own layer: scroll moves it every frame, and repainting the grooves
+     and the shadow each time drops frames on phones */
+  will-change: transform;
 }
 
 .sleeve__label {
@@ -672,6 +675,8 @@ button {
   text-transform: uppercase;
   container-type: inline-size;
   rotate: calc((var(--sleeve-out) - 1) * 360deg);
+  /* turned on its own layer too, or it repaints the record under it */
+  will-change: transform;
 }
 
 .sleeve__label-artist {
