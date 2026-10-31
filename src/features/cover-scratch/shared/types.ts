@@ -3,4 +3,5 @@ export type Point = {
   readonly y: number;
 };
 
-export type RevealMethod = 'scratch' | 'button';
+/** `sleeve`: the button on the record sleeve under «Про альбом». */
+export type RevealMethod = 'scratch' | 'button' | 'sleeve';

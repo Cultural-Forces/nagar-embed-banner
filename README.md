@@ -68,7 +68,9 @@
 вгору, з конверта праворуч виїжджає платівка і, викочуючись, повертає
 наклейку рівно; на зворотному скролі вона заїжджає назад. Платівка
 намальована в CSS. Поки обкладинку в першому екрані не відкрито, конверт
-укритий нагаром, щоб не показати її раніше.
+укритий нагаром, щоб не показати її раніше. Унизу на ньому та сама кнопка
+«Відкрити обкладинку»: вона відкриває обкладинку і в першому екрані, тож
+нагору повертатися не треба.
 
 З `prefers-reduced-motion: reduce` немає появи першого екрана, збирання
 нагару, демо-мазка, розсипання й повернення кіптяви, збільшення й нахилу
@@ -186,7 +188,7 @@ Cloudflare Pages збірка запускається сама, на GitHub Pag
 |---|---|---|---|
 | `page_view` | page load (sent by gtag) | source, device, city, UTM | — |
 | `scratch_start` | first erase stroke | — | once per page load |
-| `cover_reveal` | 85% erased or the button | `method`: `scratch` / `button` | once per page load |
+| `cover_reveal` | 85% erased, the button on the cover or the one on the sleeve | `method`: `scratch` / `button` / `sleeve` | once per page load |
 | `platform_click` | click on a platform link | `platform` | every click |
 | `social_click` | click on a social link | `network` | every click |
 | `cover_error` | an image failed to load after a retry, or canvas failed to start | `message` | every time |

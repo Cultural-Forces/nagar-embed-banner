@@ -103,8 +103,8 @@
       <section class="about" aria-labelledby="about-title">
         <div class="about__inner">
           <h2 class="about__title" id="about-title">Про альбом</h2>
-          <div class="sleeve" aria-hidden="true" data-sleeve>
-            <div class="sleeve__record">
+          <div class="sleeve" tabindex="-1" data-sleeve>
+            <div class="sleeve__record" aria-hidden="true">
               <span class="sleeve__label">
                 <span class="sleeve__label-artist">Проспект Соборний</span>
                 <span class="sleeve__label-album">Нагар</span>
@@ -113,8 +113,9 @@
             <div class="sleeve__face">
               <img class="sleeve__nagar" src="/src/assets/nagar.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
               <img class="sleeve__cover" src="/src/assets/cover.webp" width="1080" height="1080" alt="" loading="lazy" decoding="async">
-              <span class="sleeve__wear"></span>
+              <span class="sleeve__wear" aria-hidden="true"></span>
             </div>
+            <button class="sleeve__reveal-button" type="button" data-sleeve-reveal>Відкрити обкладинку</button>
           </div>
           <div class="about__body">
             <p class="about__text">

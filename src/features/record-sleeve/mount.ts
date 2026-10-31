@@ -1,6 +1,11 @@
 import { slideProgress } from './model/slide-progress';
 import { SLIDE_END_RATIO } from './shared/constants';
 
+export type RecordSleeveHandlers = {
+  /** The sleeve button asks to open the cover; the page opens it in the hero. */
+  readonly onRevealRequest: () => void;
+};
+
 export type RecordSleeveInstance = {
   destroy: () => void;
 };
@@ -9,13 +14,30 @@ export type RecordSleeveInstance = {
  * Slides the record out of the sleeve as the sleeve scrolls up into view and
  * back in on the way down: writes `--sleeve-out` (0..1) on `root`, CSS moves
  * the record and turns its label (see .sleeve in app.css). With
- * prefers-reduced-motion it does nothing and CSS keeps the record half out.
+ * prefers-reduced-motion it does not follow the scroll and CSS keeps the
+ * record out. The «Відкрити обкладинку» button works either way.
  */
-export function mountRecordSleeve(root: HTMLElement): RecordSleeveInstance {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    return { destroy: () => undefined };
-  }
+export function mountRecordSleeve(root: HTMLElement, handlers: RecordSleeveHandlers): RecordSleeveInstance {
+  const button = root.querySelector<HTMLButtonElement>('[data-sleeve-reveal]');
 
+  // the button disappears; keep keyboard focus on the sleeve it opened
+  const onButtonClick = (): void => {
+    if (document.activeElement === button) root.focus({ preventScroll: true });
+    handlers.onRevealRequest();
+  };
+  button?.addEventListener('click', onButtonClick);
+
+  const stopScroll = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? null : followScroll(root);
+
+  return {
+    destroy: () => {
+      button?.removeEventListener('click', onButtonClick);
+      stopScroll?.();
+    },
+  };
+}
+
+function followScroll(root: HTMLElement): () => void {
   let frame: number | null = null;
 
   const update = (): void => {
@@ -41,11 +63,9 @@ export function mountRecordSleeve(root: HTMLElement): RecordSleeveInstance {
   window.addEventListener('resize', onScroll);
   update();
 
-  return {
-    destroy: () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (frame !== null) cancelAnimationFrame(frame);
-    },
+  return () => {
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', onScroll);
+    if (frame !== null) cancelAnimationFrame(frame);
   };
 }

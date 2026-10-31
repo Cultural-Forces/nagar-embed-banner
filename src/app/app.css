@@ -85,6 +85,7 @@ button {
 .about__title,
 .cover__hint,
 .cover__reveal-button,
+.sleeve__reveal-button,
 .cover__loader-text,
 .platforms__link,
 .socials__link,
@@ -622,7 +623,8 @@ button {
   width: 58%;
   max-width: 320px;
   aspect-ratio: 1 / 1;
-  /*margin: 8px 0 36px;*/
+  /* room for the button under it */
+  margin: 8px 0 72px;
 }
 
 /* The grooves are round, so only the label shows the record turning. */
@@ -710,6 +712,49 @@ button {
 
 .js:has(.cover--revealed, .cover--static) .sleeve__cover {
   opacity: 1;
+}
+
+/* Under the sleeve, like the social links below the text: dark caps with a
+   red underline. It goes with the nagar: once the cover is open, here or in
+   the hero, or when there is nothing to open, it is gone. */
+.sleeve__reveal-button {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 12px 0 0;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  text-decoration-color: var(--color-accent);
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    opacity 400ms ease,
+    visibility 0s linear;
+}
+
+.sleeve__reveal-button:hover {
+  color: var(--color-accent);
+}
+
+.no-js .sleeve__reveal-button {
+  display: none;
+}
+
+.js:has(.cover--revealed, .cover--static, .cover--image-failed) .sleeve__reveal-button {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 400ms ease,
+    visibility 0s linear 400ms;
 }
 
 /* An old sleeve under the light: a lighter edge on top, paper grain, and a
@@ -869,7 +914,7 @@ button {
     grid-column: 1;
     grid-row: 2;
     align-self: start;
-    margin: 48px 0 0;
+    /*margin: 48px 0 0;*/
   }
 
   .about__body {

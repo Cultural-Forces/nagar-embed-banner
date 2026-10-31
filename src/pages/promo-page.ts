@@ -1,7 +1,7 @@
 import { env } from '../shared/config/env';
 import { loadGa } from '../shared/lib/analytics/load-ga';
 import { sendGaEvent } from '../shared/lib/analytics/send-ga-event';
-import { mountCoverScratch } from '../features/cover-scratch';
+import { mountCoverScratch, type CoverScratchInstance } from '../features/cover-scratch';
 import { mountRecordSleeve } from '../features/record-sleeve';
 import { trackLinkClicks } from '../features/link-tracking/track-link-clicks';
 
@@ -24,12 +24,21 @@ export function renderPromoPage(doc: Document): void {
     onSocialClick: (network) => sendGaEvent(EVENT_NAMES.SOCIAL_CLICK, { network }),
   });
 
-  const sleeveRoot = doc.querySelector<HTMLElement>('[data-sleeve]');
-  if (sleeveRoot !== null) mountRecordSleeve(sleeveRoot);
-
   const coverRoot = doc.querySelector<HTMLElement>('[data-cover]');
-  if (coverRoot === null) return;
+  const cover = coverRoot === null ? null : startCover(doc, coverRoot);
 
+  const sleeveRoot = doc.querySelector<HTMLElement>('[data-sleeve]');
+  if (sleeveRoot !== null) {
+    mountRecordSleeve(sleeveRoot, {
+      // opens the cover in the hero too, so going back up finds it open
+      onRevealRequest: () => {
+        void cover?.then((instance) => instance?.reveal('sleeve'));
+      },
+    });
+  }
+}
+
+function startCover(doc: Document, coverRoot: HTMLElement): Promise<CoverScratchInstance | null> {
   // TEMP: ?hint=text|gesture|cutout|text-gesture switches the hint on the soot
   // while we compare variants. Remove once one is chosen.
   const hint = new URLSearchParams(doc.location.search).get('hint');
@@ -37,7 +46,7 @@ export function renderPromoPage(doc: Document): void {
     coverRoot.dataset.hint = hint;
   }
 
-  mountCoverScratch(coverRoot, {
+  return mountCoverScratch(coverRoot, {
     onScratchStart: () => {
       sendGaEvent(EVENT_NAMES.SCRATCH_START, undefined, { once: true });
     },
@@ -54,5 +63,6 @@ export function renderPromoPage(doc: Document): void {
     coverRoot.classList.remove('cover--loading');
     coverRoot.removeAttribute('aria-busy');
     coverRoot.classList.add('cover--static');
+    return null;
   });
 }
