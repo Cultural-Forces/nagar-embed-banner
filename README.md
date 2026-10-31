@@ -55,9 +55,27 @@
    десь ледь торкаючись краю, десь язиками. Обкладинка й сторінка навколо неї
    — один шар на окремому canvas `cover__halo`, тож на межі немає лінії. Якщо
    горнути назад, кіптява сходить.
+6. На десктопі з мишкою під відкритою обкладинкою після розсипання
+   з'являється червоне світіння. Під курсором вона трохи збільшується (×1,05) і
+   нахиляється за ним до 6°, як картка в руці, з відблиском під курсором,
+   а червона тінь під нею, що у спокої лежить знизу справа, зсувається за
+   курсором; коли курсор іде, все повертається на місце з легким
+   пружинням. Ореол кіптяви
+   нахиляється разом з нею, а світіння гасне, коли кіптява повертається.
+
+Під заголовком «Про альбом» лежить обкладинка як конверт платівки: із зерном
+паперу, стертим колом від диска й світлою кромкою. Коли секцію гортають
+вгору, з конверта праворуч виїжджає платівка і, викочуючись, повертає
+наклейку рівно; на зворотному скролі вона заїжджає назад. Платівка
+намальована в CSS. Поки обкладинку в першому екрані не відкрито, конверт
+укритий нагаром, щоб не показати її раніше. Унизу на ньому та сама кнопка
+«Відкрити обкладинку»: вона відкриває обкладинку і в першому екрані, тож
+нагору повертатися не треба.
 
 З `prefers-reduced-motion: reduce` немає появи першого екрана, збирання
-нагару, демо-мазка, розсипання й повернення кіптяви: шар зникає одразу.
+нагару, демо-мазка, розсипання й повернення кіптяви, збільшення й нахилу
+обкладинки, виїзду платівки: шар зникає одразу, світіння лишається, платівка
+вже лежить виїханою.
 Лоадер крутиться й тоді.
 
 Тимчасово: параметр `?hint=text-gesture|text|gesture|cutout` перемикає варіант
@@ -73,9 +91,11 @@ src/
     cover-scratch/
       shared/    constants & types
       model/     pure logic: brush alpha, erased ratio, line sampling,
-                 demo stroke, soot field, settle level
-      controller/canvas, mask, pointer handling, scroll settle, soot halo
+                 demo stroke, soot field, settle level, card tilt
+      controller/canvas, mask, pointer handling, scroll settle, soot halo,
+                 card tilt
       mount.ts   binds the controller to the markup in index.html
+    record-sleeve/            record sliding out of the sleeve on scroll
     link-tracking/            delegated clicks on [data-platform] / [data-social]
   shared/
     config/    typed env
@@ -168,7 +188,7 @@ Cloudflare Pages збірка запускається сама, на GitHub Pag
 |---|---|---|---|
 | `page_view` | page load (sent by gtag) | source, device, city, UTM | — |
 | `scratch_start` | first erase stroke | — | once per page load |
-| `cover_reveal` | 85% erased or the button | `method`: `scratch` / `button` | once per page load |
+| `cover_reveal` | 85% erased, the button on the cover or the one on the sleeve | `method`: `scratch` / `button` / `sleeve` | once per page load |
 | `platform_click` | click on a platform link | `platform` | every click |
 | `social_click` | click on a social link | `network` | every click |
 | `cover_error` | an image failed to load after a retry, or canvas failed to start | `message` | every time |
