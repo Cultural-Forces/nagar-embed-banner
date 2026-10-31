@@ -112,10 +112,17 @@ export async function mountCoverScratch(
   };
 
   let edgeFrame: number | null = null;
+  // A new run takes over from one still going (the reveal can come while the
+  // soot is still growing), so the two do not fight over the level.
+  let edgeDone: (() => void) | null = null;
   const animateEdge = (to: number, durationMs: number): Promise<void> => {
     if (halo === null) return Promise.resolve();
+    if (edgeFrame !== null) cancelAnimationFrame(edgeFrame);
+    edgeFrame = null;
+    edgeDone?.();
     const from = edgeLevel;
     return new Promise((resolve) => {
+      edgeDone = resolve;
       const start = performance.now();
       const step = (now: number): void => {
         const t = durationMs > 0 ? Math.min(1, (now - start) / durationMs) : 1;
@@ -125,6 +132,7 @@ export async function mountCoverScratch(
           edgeFrame = requestAnimationFrame(step);
         } else {
           edgeFrame = null;
+          edgeDone = null;
           resolve();
         }
       };
@@ -256,7 +264,8 @@ export async function mountCoverScratch(
     window.addEventListener('resize', drawEdge);
     void Promise.all([scratch.appear(appearMs), animateEdge(EDGE_SOOT_LEVEL, appearMs)]).then(() => {
       root.classList.add('cover--canvas');
-      startHint(scratch);
+      // opened while the nagar was gathering: no hint over the open cover
+      if (!revealed) startHint(scratch);
     });
   } catch (error) {
     canvas?.remove();
