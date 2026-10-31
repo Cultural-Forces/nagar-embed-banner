@@ -50,21 +50,67 @@ export function createDissolveField(
   return equalizeField(field);
 }
 
-/** Order in which soot settles back: from the edges inwards, unevenly. */
-export function createSettleField(size: number, cells: number, random: () => number): Float32Array {
+export type SootField = {
+  /** Order of covering: lower values are covered at lower levels. */
+  readonly values: Float32Array;
+  /** Opacity multiplier: 1 on the cover, thinning to 0 at the outer edge. */
+  readonly fade: Float32Array;
+};
+
+/**
+ * Order in which soot settles back after the reveal, on the cover and around
+ * it in one field, so there is no seam at the cover edge. It starts at the
+ * edge and grows both ways: inwards over the cover and outwards onto the page.
+ * Coarse noise sets how far it reaches at each spot (long tongues here, barely
+ * a touch there), finer noise rags the front.
+ *
+ * The field is a `size` × `size` square: the cover in the middle, `margin`
+ * (share of the field side) of page around it. Not equalized, so a level
+ * reads as reach; at `SOOT_FULL_LEVEL` about a third of the cover is covered.
+ */
+export function createSootField(
+  size: number,
+  margin: number,
+  cells: number,
+  random: () => number,
+): SootField {
+  const reachNoise = createValueNoise(size, SOOT_REACH_CELLS, random);
   const noise = createValueNoise(size, cells, random);
-  const field = new Float32Array(size * size);
+  const values = new Float32Array(size * size);
+  const fade = new Float32Array(size * size);
+  const cover = 1 - 2 * margin;
+  const half = cover / 2;
+
   for (let y = 0; y < size; y++) {
-    const v = (y + 0.5) / size;
+    const oy = Math.abs((y + 0.5) / size - 0.5) - half;
     for (let x = 0; x < size; x++) {
-      const u = (x + 0.5) / size;
-      const fromEdge = Math.min(u, 1 - u, v, 1 - v) * 2;
+      const ox = Math.abs((x + 0.5) / size - 0.5) - half;
       const i = y * size + x;
-      field[i] = 0.65 * fromEdge + 0.25 * (noise[i] ?? 0) + 0.1 * random();
+      const inside = ox <= 0 && oy <= 0;
+
+      // 0 at the cover edge, 1 where soot stops at full level when the reach is 1:
+      // SOOT_INSIDE_DEPTH of the cover side inwards, the whole margin outwards
+      const outward = Math.hypot(Math.max(0, ox), Math.max(0, oy)) / margin;
+      const fromEdge = inside ? -Math.max(ox, oy) / cover / SOOT_INSIDE_DEPTH : outward;
+
+      const reach = SOOT_REACH_MIN + (SOOT_REACH_MAX - SOOT_REACH_MIN) * (reachNoise[i] ?? 0);
+      values[i] = 0.7 * (fromEdge / reach) + 0.3 * (noise[i] ?? 0) + 0.1 * random();
+      // on the page it thins out, and always to nothing at the canvas edge
+      fade[i] = inside ? 1 : (1 - ramp(fromEdge / reach, 0.1, 1)) * (1 - ramp(outward, 0.75, 1));
     }
   }
-  return equalizeField(field);
+
+  return { values, fade };
 }
+
+/** Level at which the soot has settled back fully. */
+export const SOOT_FULL_LEVEL = 0.95;
+/** How deep into the cover soot reaches at full level, as a share of its side. */
+const SOOT_INSIDE_DEPTH = 0.09;
+/** Coarse noise for the reach: few cells, so tongues are wide. */
+const SOOT_REACH_CELLS = 4;
+const SOOT_REACH_MIN = 0.45;
+const SOOT_REACH_MAX = 1.7;
 
 const EQUALIZE_BINS = 1024;
 
@@ -102,19 +148,25 @@ export function equalizeField(field: Float32Array): Float32Array {
   return field;
 }
 
-/** Writes coverage at `level` into the alpha channel of RGBA data. */
+/** Writes coverage at `level` into the alpha channel of RGBA data, times `scale` if given. */
 export function writeFieldAlpha(
   field: Float32Array,
   level: number,
   softness: number,
   rgba: Uint8ClampedArray,
+  scale?: Float32Array,
 ): void {
   for (let i = 0; i < field.length; i++) {
-    const coverage = (level - (field[i] ?? 1)) / softness;
-    rgba[i * 4 + 3] = coverage <= 0 ? 0 : coverage >= 1 ? 255 : Math.round(coverage * 255);
+    const coverage = Math.min(1, Math.max(0, (level - (field[i] ?? 1)) / softness));
+    rgba[i * 4 + 3] = Math.round(coverage * (scale === undefined ? 1 : (scale[i] ?? 0)) * 255);
   }
 }
 
 function smooth(t: number): number {
   return t * t * (3 - 2 * t);
+}
+
+/** 0 below `from`, 1 above `to`, smooth in between. */
+function ramp(value: number, from: number, to: number): number {
+  return smooth(Math.min(1, Math.max(0, (value - from) / (to - from))));
 }

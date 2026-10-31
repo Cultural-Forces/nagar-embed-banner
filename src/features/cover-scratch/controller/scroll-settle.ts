@@ -1,4 +1,4 @@
-import { SETTLE_MAX_LEVEL, SETTLE_SCROLL_RANGE, SETTLE_SMOOTHING_MS } from '../shared/constants';
+import { SETTLE_SCROLL_RANGE, SETTLE_SMOOTHING_MS } from '../shared/constants';
 import { settleLevel } from '../model/settle-level';
 
 export type ScrollSettleDeps = {
@@ -13,10 +13,10 @@ export type ScrollSettle = {
 const EPSILON = 0.001;
 
 /**
- * Maps the scroll position of `target` to a soot level. The target level
- * follows scroll exactly; the shown level eases towards it every frame, so a
- * flick of the finger does not make the soot jump. Frames run only while the
- * two differ.
+ * Maps the scroll position of `target` to how much soot has settled back,
+ * 0..1. The target level follows scroll exactly; the shown level eases towards
+ * it every frame, so a flick of the finger does not make the soot jump. Frames
+ * run only while the two differ.
  */
 export function startScrollSettle(deps: ScrollSettleDeps): ScrollSettle {
   let current = 0;
@@ -26,7 +26,7 @@ export function startScrollSettle(deps: ScrollSettleDeps): ScrollSettle {
 
   const measure = (): void => {
     const rect = deps.target.getBoundingClientRect();
-    target = settleLevel(rect.top, rect.height, SETTLE_MAX_LEVEL, SETTLE_SCROLL_RANGE);
+    target = settleLevel(rect.top, rect.height, 1, SETTLE_SCROLL_RANGE);
   };
 
   const tick = (now: number): void => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createDissolveField,
-  createSettleField,
+  createSootField,
   createValueNoise,
   equalizeField,
   writeFieldAlpha,
@@ -34,11 +34,37 @@ describe('createDissolveField', () => {
   });
 });
 
-describe('createSettleField', () => {
-  it('covers the edges before the centre', () => {
-    const field = createSettleField(SIZE, 4, () => 0.5);
-    const centre = (SIZE / 2) * SIZE + SIZE / 2;
-    expect(field[0]).toBeLessThan(field[centre] ?? 0);
+describe('createSootField', () => {
+  const N = 40;
+  const MARGIN = 0.2; // 8 cells of page on each side of a 24-cell cover
+  const at = (field: Float32Array, x: number, y: number): number => field[y * N + x] ?? NaN;
+
+  it('settles from the cover edge both ways: inwards and onto the page', () => {
+    const { values } = createSootField(N, MARGIN, 4, () => 0.5);
+    const edge = at(values, 20, 8);
+    expect(edge).toBeLessThan(at(values, 20, 12)); // further into the cover
+    expect(edge).toBeLessThan(at(values, 20, 2)); // further out on the page
+    expect(edge).toBeLessThan(at(values, 20, 20)); // the centre last
+  });
+
+  it('runs across the cover edge without a step', () => {
+    const { values } = createSootField(N, MARGIN, 4, () => 0.5);
+    const across = Math.abs(at(values, 20, 8) - at(values, 20, 7));
+    const nextStepInside = at(values, 20, 9) - at(values, 20, 8);
+    expect(across).toBeLessThan(nextStepInside);
+  });
+
+  it('keeps soot opaque on the cover and thins it out on the page', () => {
+    const { fade } = createSootField(N, MARGIN, 4, () => 0.5);
+    expect(at(fade, 20, 10)).toBe(1);
+    expect(at(fade, 20, 6)).toBeGreaterThan(at(fade, 20, 2));
+    expect(at(fade, 20, 0)).toBeLessThan(0.05);
+  });
+
+  it('reaches unevenly along the edge', () => {
+    const { values } = createSootField(N, MARGIN, 4, seeded(9));
+    const ring = Array.from({ length: 20 }, (_, k) => at(values, 10 + k, 4));
+    expect(Math.max(...ring) - Math.min(...ring)).toBeGreaterThan(0.1);
   });
 });
 

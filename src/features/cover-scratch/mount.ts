@@ -1,3 +1,4 @@
+import { createHaloRenderer, type HaloRenderer } from './controller/halo-renderer';
 import { startScratchController, type ScratchController } from './controller/scratch-controller';
 import { startScrollSettle, type ScrollSettle } from './controller/scroll-settle';
 import { waitForImage } from './controller/wait-for-image';
@@ -55,12 +56,33 @@ export async function mountCoverScratch(
   };
 
   // The rest of the nagar crumbles away, then soot settles back on the cover
-  // as it scrolls out of view and clears when it comes back.
+  // as it scrolls out of view and clears when it comes back. Around the cover
+  // it spills onto the page, so the cover edges do not cut off sharply.
   const playReveal = (scratch: ScratchController): void => {
     void scratch.dissolve(reducedMotion ? 0 : DISSOLVE_DURATION_MS).then(() => {
       if (reducedMotion || scrollSettle !== null) return;
-      scrollSettle = startScrollSettle({ target: refs.stage, onLevel: scratch.setSettleLevel });
+      const halo = startHalo();
+      scrollSettle = startScrollSettle({
+        target: refs.stage,
+        onLevel: (amount) => halo?.draw(amount),
+      });
     });
+  };
+
+  let haloCanvas: HTMLCanvasElement | null = null;
+  const startHalo = (): HaloRenderer | null => {
+    haloCanvas = document.createElement('canvas');
+    haloCanvas.className = 'cover__halo';
+    haloCanvas.setAttribute('aria-hidden', 'true');
+    refs.stage.after(haloCanvas);
+    try {
+      return createHaloRenderer({ stage: refs.stage, canvas: haloCanvas, nagar: refs.nagar });
+    } catch {
+      // the cover just stays clean after the reveal
+      haloCanvas.remove();
+      haloCanvas = null;
+      return null;
+    }
   };
 
   const reveal = (method: RevealMethod): void => {
@@ -123,6 +145,7 @@ export async function mountCoverScratch(
       if (demoTimer !== null) window.clearTimeout(demoTimer);
       refs.button.removeEventListener('click', onButtonClick);
       scrollSettle?.destroy();
+      haloCanvas?.remove();
       controller?.destroy();
       canvas?.remove();
     },
