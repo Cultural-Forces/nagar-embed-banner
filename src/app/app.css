@@ -27,7 +27,7 @@
   --color-ink: #000;
   --color-focus: var(--color-accent);
   --content-width: 560px;
-  --wide-width: 1440px;
+  --wide-width: 1600px;
   --gutter: 20px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: 'Unbounded', 'Arial Black', var(--font);
@@ -858,7 +858,10 @@ button {
 /* Desktop: cover on the right, text on the left, like the presentation slides.
    The first screen takes 90% of the window, so only the top of «Про альбом»
    shows under it, and the cover grows with the screen: from 520 px up to
-   720 px, never taller than the first screen minus the padding around it. */
+   720 px, never taller than the first screen minus the padding around it.
+   The gap between the columns grows with it, since the soot past the cover
+   edge grows too (20% of the cover, 144 px at 720): 64 px up to
+   1200 px wide, about 150 px at 1920. */
 
 @media (min-width: 960px) {
   :root {
@@ -872,7 +875,7 @@ button {
     grid-template-areas: 'content cover';
     align-items: center;
     align-content: center;
-    gap: 64px;
+    gap: clamp(64px, 12vw - 80px, 200px);
     min-height: 90vh;
     max-width: var(--wide-width);
     padding: 72px var(--gutter);
