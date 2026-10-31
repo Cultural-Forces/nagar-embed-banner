@@ -113,9 +113,11 @@ button {
 /* Cover: full width on phones. */
 
 .cover {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
 }
 
 .cover__stage {
