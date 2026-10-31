@@ -71,19 +71,29 @@ export function createHaloRenderer(deps: HaloRendererDeps): HaloRenderer {
   // One repeating pattern rather than nine drawn tiles: at a fractional cover
   // size the tiles' edges are half-transparent pixels, and the black page
   // showed through where they met, as a thin frame along the cover edges.
-  // The pattern is made again when srcset picks another file for the nagar.
+  // The pattern repeats a tile with the nagar drawn at the cover's size in
+  // device pixels, the same drawImage as on the nagar canvas, so the texture
+  // matches it. A pattern made straight from the <img> repeats its file at
+  // the file's own size, which srcset makes differ from naturalWidth.
+  const tile = document.createElement('canvas');
+  const tileCtx = tile.getContext('2d');
   let pattern: CanvasPattern | null = null;
-  let patternSource = '';
+  let patternKey = '';
   const drawTiledNagar = (): void => {
-    if (pattern === null || patternSource !== nagar.currentSrc) {
-      pattern = ctx.createPattern(nagar, 'repeat');
-      patternSource = nagar.currentSrc;
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const tileSize = Math.max(1, Math.round(coverSize * dpr));
+    const key = `${nagar.currentSrc} ${tileSize}`;
+    if (tileCtx === null) return;
+    if (pattern === null || patternKey !== key) {
+      tile.width = tileSize;
+      tile.height = tileSize;
+      tileCtx.drawImage(nagar, 0, 0, tileSize, tileSize);
+      pattern = ctx.createPattern(tile, 'repeat');
+      patternKey = key;
     }
     if (pattern === null) return;
     pattern.setTransform(
-      new DOMMatrix()
-        .translateSelf(margin, margin)
-        .scaleSelf(coverSize / nagar.naturalWidth, coverSize / nagar.naturalHeight),
+      new DOMMatrix().translateSelf(margin, margin).scaleSelf(coverSize / tileSize, coverSize / tileSize),
     );
     ctx.fillStyle = pattern;
     ctx.fillRect(0, 0, side, side);
